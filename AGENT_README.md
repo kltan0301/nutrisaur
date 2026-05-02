@@ -32,6 +32,8 @@ The bot calls Gemini through the REST `generateContent` endpoint using `GEMINI_A
 
 ## Test
 
+Set `APP_TIMEZONE` to control displayed meal times and the boundaries for `today`, `yesterday`, `this week`, and summaries. It defaults to `Asia/Singapore`.
+
 ```bash
 npm run build
 npx ts-node src/agent/__tests__/agent.test.ts

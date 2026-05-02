@@ -33,6 +33,8 @@ Update `.env` file:
 TELEGRAM_BOT_TOKEN=your_bot_token_here
 GEMINI_API_KEY=your_gemini_key_here
 GEMINI_MODEL=gemini-2.5-flash
+GEMINI_FALLBACK_MODELS=gemini-2.5-flash-lite,gemini-2.0-flash-lite
+APP_TIMEZONE=Asia/Singapore
 WEBHOOK_SECRET=your_secret_key_here
 DATA_FILE=data/nutrisaur.json
 SUPABASE_URL=https://your-project.supabase.co
@@ -155,6 +157,8 @@ Expected response: `{ "ok": true }`
 | TELEGRAM_BOT_TOKEN | (required) | Your bot token from BotFather |
 | GEMINI_API_KEY | (required for analysis) | Gemini API key |
 | GEMINI_MODEL | gemini-2.5-flash | Gemini model for text and image analysis |
+| GEMINI_FALLBACK_MODELS | gemini-2.5-flash-lite,gemini-2.0-flash-lite | Comma-separated models to try after Gemini 429 rate-limit errors |
+| APP_TIMEZONE | Asia/Singapore | Timezone used for displayed meal times and day/week ranges |
 | DATA_FILE | data/nutrisaur.json | JSON persistence path when Supabase is not configured |
 | SUPABASE_URL | (optional) | Supabase project URL for hosted Postgres storage |
 | SUPABASE_SERVICE_ROLE_KEY | (optional) | Server-only Supabase key for DB REST access |

@@ -5,7 +5,9 @@ export declare const config: {
     readonly telegramBotToken: string;
     readonly geminiApiKey: string;
     readonly geminiModel: string;
+    readonly geminiFallbackModels: string[];
     readonly dataFile: string;
+    readonly appTimezone: string;
     readonly supabaseUrl: string;
     readonly supabaseServiceRoleKey: string;
 };

@@ -86,11 +86,18 @@ function nutritionCacheKey(description, image) {
         source: 'text',
     };
 }
-async function callGemini(parts, systemInstruction) {
-    if (!config_1.config.geminiApiKey) {
-        throw new Error('GEMINI_API_KEY is not set');
-    }
-    const response = await axios_1.default.post(`https://generativelanguage.googleapis.com/v1beta/models/${config_1.config.geminiModel}:generateContent`, {
+function geminiModels() {
+    return Array.from(new Set([config_1.config.geminiModel, ...config_1.config.geminiFallbackModels]));
+}
+function isGeminiRateLimitError(error) {
+    const axiosError = error;
+    return axiosError.response?.status === 429 || axiosError.response?.data?.error?.status === 'RESOURCE_EXHAUSTED';
+}
+function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+async function callGeminiModel(model, parts, systemInstruction) {
+    const response = await axios_1.default.post(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
         systemInstruction: systemInstruction ? { parts: [{ text: systemInstruction }] } : undefined,
         contents: [{ role: 'user', parts }],
         generationConfig: {
@@ -107,6 +114,28 @@ async function callGemini(parts, systemInstruction) {
     if (!text)
         throw new Error('Gemini returned an empty response');
     return text;
+}
+async function callGemini(parts, systemInstruction) {
+    if (!config_1.config.geminiApiKey) {
+        throw new Error('GEMINI_API_KEY is not set');
+    }
+    let lastError;
+    for (const model of geminiModels()) {
+        for (let attempt = 0; attempt < 2; attempt += 1) {
+            try {
+                if (attempt > 0)
+                    await sleep(750 * (attempt + 1));
+                return await callGeminiModel(model, parts, systemInstruction);
+            }
+            catch (error) {
+                lastError = error;
+                if (!isGeminiRateLimitError(error))
+                    throw error;
+                console.warn(`[${new Date().toISOString()}] Gemini rate limited for ${model}; ${attempt === 0 ? 'retrying' : 'trying fallback model'}`);
+            }
+        }
+    }
+    throw lastError instanceof Error ? lastError : new Error('Gemini rate limit exceeded');
 }
 async function estimateNutrition(description, image) {
     const cache = nutritionCacheKey(description, image);
@@ -162,43 +191,103 @@ function parseSummaryPeriod(input) {
         return 'week';
     return 'day';
 }
+function getZonedParts(date, timeZone = config_1.config.appTimezone) {
+    const parts = new Intl.DateTimeFormat('en-US', {
+        timeZone,
+        year: 'numeric',
+        month: 'numeric',
+        day: 'numeric',
+        weekday: 'short',
+        hour: 'numeric',
+        minute: 'numeric',
+        second: 'numeric',
+        hour12: false,
+    }).formatToParts(date);
+    const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+    const weekdayMap = {
+        Sun: 0,
+        Mon: 1,
+        Tue: 2,
+        Wed: 3,
+        Thu: 4,
+        Fri: 5,
+        Sat: 6,
+    };
+    return {
+        year: Number(values.year),
+        month: Number(values.month),
+        day: Number(values.day),
+        weekday: weekdayMap[values.weekday] ?? 0,
+        hour: Number(values.hour),
+        minute: Number(values.minute),
+        second: Number(values.second),
+    };
+}
+function zonedDateToUtc(year, month, day, hour = 0, minute = 0, second = 0, millisecond = 0) {
+    const utcGuess = new Date(Date.UTC(year, month - 1, day, hour, minute, second, millisecond));
+    const parts = getZonedParts(utcGuess);
+    const offsetMs = Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, parts.second) - utcGuess.getTime();
+    return new Date(utcGuess.getTime() - offsetMs);
+}
+function addLocalDays(localDate, days) {
+    const date = new Date(Date.UTC(localDate.year, localDate.month - 1, localDate.day + days));
+    return {
+        year: date.getUTCFullYear(),
+        month: date.getUTCMonth() + 1,
+        day: date.getUTCDate(),
+    };
+}
+function localDateFromDate(date) {
+    const parts = getZonedParts(date);
+    return {
+        year: parts.year,
+        month: parts.month,
+        day: parts.day,
+        weekday: parts.weekday,
+    };
+}
+function startOfLocalDay(date) {
+    const parts = localDateFromDate(date);
+    return zonedDateToUtc(parts.year, parts.month, parts.day, 0, 0, 0, 0);
+}
+function endOfLocalDay(date) {
+    const parts = localDateFromDate(date);
+    return zonedDateToUtc(parts.year, parts.month, parts.day, 23, 59, 59, 999);
+}
 function getDateRange(period) {
-    const endDate = new Date();
-    endDate.setHours(23, 59, 59, 999);
-    const startDate = new Date(endDate);
+    const now = new Date();
     const dayCount = period === 'month' ? 30 : period === 'week' ? 7 : 1;
-    startDate.setDate(startDate.getDate() - (dayCount - 1));
-    startDate.setHours(0, 0, 0, 0);
-    return { startDate, endDate, dayCount };
+    const localToday = localDateFromDate(now);
+    const localStart = addLocalDays(localToday, -(dayCount - 1));
+    return {
+        startDate: zonedDateToUtc(localStart.year, localStart.month, localStart.day, 0, 0, 0, 0),
+        endDate: endOfLocalDay(now),
+        dayCount,
+    };
 }
 function startOfDay(date) {
-    const result = new Date(date);
-    result.setHours(0, 0, 0, 0);
-    return result;
+    return startOfLocalDay(date);
 }
 function endOfDay(date) {
-    const result = new Date(date);
-    result.setHours(23, 59, 59, 999);
-    return result;
+    return endOfLocalDay(date);
 }
 function startOfWeek(date) {
-    const result = startOfDay(date);
-    const day = result.getDay();
-    const daysSinceMonday = day === 0 ? 6 : day - 1;
-    result.setDate(result.getDate() - daysSinceMonday);
-    return result;
+    const localDate = localDateFromDate(date);
+    const daysSinceMonday = localDate.weekday === 0 ? 6 : localDate.weekday - 1;
+    const localMonday = addLocalDays(localDate, -daysSinceMonday);
+    return zonedDateToUtc(localMonday.year, localMonday.month, localMonday.day, 0, 0, 0, 0);
 }
 function parseSpecificDate(input) {
     const iso = input.match(/\b(\d{4})-(\d{1,2})-(\d{1,2})\b/);
     if (iso) {
         const [, year, month, day] = iso;
-        const date = new Date(Number(year), Number(month) - 1, Number(day));
+        const date = zonedDateToUtc(Number(year), Number(month), Number(day));
         return Number.isNaN(date.getTime()) ? null : date;
     }
     const slash = input.match(/\b(\d{1,2})\/(\d{1,2})\/(\d{4})\b/);
     if (slash) {
         const [, day, month, year] = slash;
-        const date = new Date(Number(year), Number(month) - 1, Number(day));
+        const date = zonedDateToUtc(Number(year), Number(month), Number(day));
         return Number.isNaN(date.getTime()) ? null : date;
     }
     return null;
@@ -209,13 +298,12 @@ function parseWeekday(input) {
     const weekdayIndex = weekdays.findIndex((day) => lower.includes(day));
     if (weekdayIndex < 0)
         return null;
-    const today = startOfDay(new Date());
-    const currentDay = today.getDay();
-    let diff = currentDay - weekdayIndex;
+    const today = localDateFromDate(new Date());
+    let diff = today.weekday - weekdayIndex;
     if (lower.includes('last') || diff <= 0)
         diff += 7;
-    const date = new Date(today);
-    date.setDate(today.getDate() - diff);
+    const localDate = addLocalDays(today, -diff);
+    const date = zonedDateToUtc(localDate.year, localDate.month, localDate.day);
     return { date, label: lower.includes('last') ? `last ${weekdays[weekdayIndex]}` : weekdays[weekdayIndex] };
 }
 function parseLogsRange(userInput) {
@@ -232,13 +320,13 @@ function parseLogsRange(userInput) {
         return { label: 'last week', startDate, endDate };
     }
     if (input.includes('last 7 days')) {
-        const startDate = startOfDay(now);
-        startDate.setDate(startDate.getDate() - 6);
+        const localStart = addLocalDays(localDateFromDate(now), -6);
+        const startDate = zonedDateToUtc(localStart.year, localStart.month, localStart.day);
         return { label: 'last 7 days', startDate, endDate: endOfDay(now) };
     }
     if (input.includes('yesterday')) {
-        const date = new Date(now);
-        date.setDate(date.getDate() - 1);
+        const localYesterday = addLocalDays(localDateFromDate(now), -1);
+        const date = zonedDateToUtc(localYesterday.year, localYesterday.month, localYesterday.day);
         return { label: 'yesterday', startDate: startOfDay(date), endDate: endOfDay(date) };
     }
     if (input.includes('today')) {
@@ -247,7 +335,7 @@ function parseLogsRange(userInput) {
     const specificDate = parseSpecificDate(input);
     if (specificDate) {
         return {
-            label: specificDate.toLocaleDateString('en-SG', { year: 'numeric', month: 'short', day: 'numeric' }),
+            label: specificDate.toLocaleDateString('en-SG', { year: 'numeric', month: 'short', day: 'numeric', timeZone: config_1.config.appTimezone }),
             startDate: startOfDay(specificDate),
             endDate: endOfDay(specificDate),
         };
@@ -260,6 +348,7 @@ function parseLogsRange(userInput) {
 }
 function formatMealTime(timestamp) {
     return new Date(timestamp).toLocaleString('en-SG', {
+        timeZone: config_1.config.appTimezone,
         month: 'short',
         day: 'numeric',
         hour: '2-digit',
@@ -431,7 +520,11 @@ async function handleGoal(request) {
 }
 async function handleLog(request, image) {
     try {
-        const text = cleanCommand(request.userInput, 'log') || request.userInput;
+        const isLogCommand = /^\/log(?:@\w+)?(?:\s|$)/i.test(request.userInput);
+        const text = isLogCommand ? cleanCommand(request.userInput, 'log') : request.userInput;
+        if (!image && !text.trim()) {
+            return response(types_1.Intent.LOG, false, null, '🦖 Rawr? I think you forgot the food. I can’t crunch invisible lunch — tell me what you ate or send a meal photo.');
+        }
         const nutrition = await estimateNutrition(text, image);
         const meal = {
             id: mealId(),
@@ -451,7 +544,16 @@ async function handleLog(request, image) {
 }
 async function handleAnalyze(request, image) {
     try {
-        const text = cleanCommand(request.userInput, 'analyse') || cleanCommand(request.userInput, 'analyze') || request.userInput;
+        const isAnalyseCommand = /^\/analyse(?:@\w+)?(?:\s|$)/i.test(request.userInput);
+        const isAnalyzeCommand = /^\/analyze(?:@\w+)?(?:\s|$)/i.test(request.userInput);
+        const text = isAnalyseCommand
+            ? cleanCommand(request.userInput, 'analyse')
+            : isAnalyzeCommand
+                ? cleanCommand(request.userInput, 'analyze')
+                : request.userInput;
+        if (!image && !text.trim()) {
+            return response(types_1.Intent.ANALYZE, false, null, '🦖 Tiny problem: my dino brain needs an actual meal to analyse. Try /analyse chicken rice, or send me a food photo.');
+        }
         const nutrition = await estimateNutrition(text, image);
         return response(types_1.Intent.ANALYZE, true, nutrition, `Analysis: ${nutrition.food}\n${nutrition.calories} cal | Protein ${nutrition.protein}g | Carbs ${nutrition.carbs}g | Fat ${nutrition.fat}g | Sugar ${nutrition.sugar}g\nConfidence: ${Math.round(nutrition.confidence * 100)}%`);
     }

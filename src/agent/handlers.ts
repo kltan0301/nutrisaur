@@ -98,13 +98,22 @@ function nutritionCacheKey(description: string, image?: { data: string; mimeType
   };
 }
 
-async function callGemini(parts: Array<Record<string, unknown>>, systemInstruction?: string): Promise<string> {
-  if (!config.geminiApiKey) {
-    throw new Error('GEMINI_API_KEY is not set');
-  }
+function geminiModels(): string[] {
+  return Array.from(new Set([config.geminiModel, ...config.geminiFallbackModels]));
+}
 
+function isGeminiRateLimitError(error: unknown): boolean {
+  const axiosError = error as { response?: { status?: number; data?: { error?: { status?: string } } } };
+  return axiosError.response?.status === 429 || axiosError.response?.data?.error?.status === 'RESOURCE_EXHAUSTED';
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function callGeminiModel(model: string, parts: Array<Record<string, unknown>>, systemInstruction?: string): Promise<string> {
   const response = await axios.post(
-    `https://generativelanguage.googleapis.com/v1beta/models/${config.geminiModel}:generateContent`,
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
     {
       systemInstruction: systemInstruction ? { parts: [{ text: systemInstruction }] } : undefined,
       contents: [{ role: 'user', parts }],
@@ -124,6 +133,28 @@ async function callGemini(parts: Array<Record<string, unknown>>, systemInstructi
   const text = response.data?.candidates?.[0]?.content?.parts?.map((part: any) => part.text).filter(Boolean).join('\n');
   if (!text) throw new Error('Gemini returned an empty response');
   return text;
+}
+
+async function callGemini(parts: Array<Record<string, unknown>>, systemInstruction?: string): Promise<string> {
+  if (!config.geminiApiKey) {
+    throw new Error('GEMINI_API_KEY is not set');
+  }
+
+  let lastError: unknown;
+  for (const model of geminiModels()) {
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      try {
+        if (attempt > 0) await sleep(750 * (attempt + 1));
+        return await callGeminiModel(model, parts, systemInstruction);
+      } catch (error) {
+        lastError = error;
+        if (!isGeminiRateLimitError(error)) throw error;
+        console.warn(`[${new Date().toISOString()}] Gemini rate limited for ${model}; ${attempt === 0 ? 'retrying' : 'trying fallback model'}`);
+      }
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error('Gemini rate limit exceeded');
 }
 
 async function estimateNutrition(description: string, image?: { data: string; mimeType: string }): Promise<NutritionData> {
@@ -188,48 +219,125 @@ function parseSummaryPeriod(input: string): SummaryPeriod {
   return 'day';
 }
 
+interface ZonedDateParts {
+  year: number;
+  month: number;
+  day: number;
+  weekday: number;
+  hour: number;
+  minute: number;
+  second: number;
+}
+
+function getZonedParts(date: Date, timeZone = config.appTimezone): ZonedDateParts {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+    weekday: 'short',
+    hour: 'numeric',
+    minute: 'numeric',
+    second: 'numeric',
+    hour12: false,
+  }).formatToParts(date);
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  const weekdayMap: Record<string, number> = {
+    Sun: 0,
+    Mon: 1,
+    Tue: 2,
+    Wed: 3,
+    Thu: 4,
+    Fri: 5,
+    Sat: 6,
+  };
+
+  return {
+    year: Number(values.year),
+    month: Number(values.month),
+    day: Number(values.day),
+    weekday: weekdayMap[values.weekday] ?? 0,
+    hour: Number(values.hour),
+    minute: Number(values.minute),
+    second: Number(values.second),
+  };
+}
+
+function zonedDateToUtc(year: number, month: number, day: number, hour = 0, minute = 0, second = 0, millisecond = 0): Date {
+  const utcGuess = new Date(Date.UTC(year, month - 1, day, hour, minute, second, millisecond));
+  const parts = getZonedParts(utcGuess);
+  const offsetMs = Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, parts.second) - utcGuess.getTime();
+  return new Date(utcGuess.getTime() - offsetMs);
+}
+
+function addLocalDays(localDate: { year: number; month: number; day: number }, days: number): { year: number; month: number; day: number } {
+  const date = new Date(Date.UTC(localDate.year, localDate.month - 1, localDate.day + days));
+  return {
+    year: date.getUTCFullYear(),
+    month: date.getUTCMonth() + 1,
+    day: date.getUTCDate(),
+  };
+}
+
+function localDateFromDate(date: Date): { year: number; month: number; day: number; weekday: number } {
+  const parts = getZonedParts(date);
+  return {
+    year: parts.year,
+    month: parts.month,
+    day: parts.day,
+    weekday: parts.weekday,
+  };
+}
+
+function startOfLocalDay(date: Date): Date {
+  const parts = localDateFromDate(date);
+  return zonedDateToUtc(parts.year, parts.month, parts.day, 0, 0, 0, 0);
+}
+
+function endOfLocalDay(date: Date): Date {
+  const parts = localDateFromDate(date);
+  return zonedDateToUtc(parts.year, parts.month, parts.day, 23, 59, 59, 999);
+}
+
 function getDateRange(period: SummaryPeriod): { startDate: Date; endDate: Date; dayCount: number } {
-  const endDate = new Date();
-  endDate.setHours(23, 59, 59, 999);
-  const startDate = new Date(endDate);
+  const now = new Date();
   const dayCount = period === 'month' ? 30 : period === 'week' ? 7 : 1;
-  startDate.setDate(startDate.getDate() - (dayCount - 1));
-  startDate.setHours(0, 0, 0, 0);
-  return { startDate, endDate, dayCount };
+  const localToday = localDateFromDate(now);
+  const localStart = addLocalDays(localToday, -(dayCount - 1));
+  return {
+    startDate: zonedDateToUtc(localStart.year, localStart.month, localStart.day, 0, 0, 0, 0),
+    endDate: endOfLocalDay(now),
+    dayCount,
+  };
 }
 
 function startOfDay(date: Date): Date {
-  const result = new Date(date);
-  result.setHours(0, 0, 0, 0);
-  return result;
+  return startOfLocalDay(date);
 }
 
 function endOfDay(date: Date): Date {
-  const result = new Date(date);
-  result.setHours(23, 59, 59, 999);
-  return result;
+  return endOfLocalDay(date);
 }
 
 function startOfWeek(date: Date): Date {
-  const result = startOfDay(date);
-  const day = result.getDay();
-  const daysSinceMonday = day === 0 ? 6 : day - 1;
-  result.setDate(result.getDate() - daysSinceMonday);
-  return result;
+  const localDate = localDateFromDate(date);
+  const daysSinceMonday = localDate.weekday === 0 ? 6 : localDate.weekday - 1;
+  const localMonday = addLocalDays(localDate, -daysSinceMonday);
+  return zonedDateToUtc(localMonday.year, localMonday.month, localMonday.day, 0, 0, 0, 0);
 }
 
 function parseSpecificDate(input: string): Date | null {
   const iso = input.match(/\b(\d{4})-(\d{1,2})-(\d{1,2})\b/);
   if (iso) {
     const [, year, month, day] = iso;
-    const date = new Date(Number(year), Number(month) - 1, Number(day));
+    const date = zonedDateToUtc(Number(year), Number(month), Number(day));
     return Number.isNaN(date.getTime()) ? null : date;
   }
 
   const slash = input.match(/\b(\d{1,2})\/(\d{1,2})\/(\d{4})\b/);
   if (slash) {
     const [, day, month, year] = slash;
-    const date = new Date(Number(year), Number(month) - 1, Number(day));
+    const date = zonedDateToUtc(Number(year), Number(month), Number(day));
     return Number.isNaN(date.getTime()) ? null : date;
   }
 
@@ -242,13 +350,12 @@ function parseWeekday(input: string): { date: Date; label: string } | null {
   const weekdayIndex = weekdays.findIndex((day) => lower.includes(day));
   if (weekdayIndex < 0) return null;
 
-  const today = startOfDay(new Date());
-  const currentDay = today.getDay();
-  let diff = currentDay - weekdayIndex;
+  const today = localDateFromDate(new Date());
+  let diff = today.weekday - weekdayIndex;
   if (lower.includes('last') || diff <= 0) diff += 7;
 
-  const date = new Date(today);
-  date.setDate(today.getDate() - diff);
+  const localDate = addLocalDays(today, -diff);
+  const date = zonedDateToUtc(localDate.year, localDate.month, localDate.day);
   return { date, label: lower.includes('last') ? `last ${weekdays[weekdayIndex]}` : weekdays[weekdayIndex] };
 }
 
@@ -269,14 +376,14 @@ function parseLogsRange(userInput: string): { label: string; startDate: Date; en
   }
 
   if (input.includes('last 7 days')) {
-    const startDate = startOfDay(now);
-    startDate.setDate(startDate.getDate() - 6);
+    const localStart = addLocalDays(localDateFromDate(now), -6);
+    const startDate = zonedDateToUtc(localStart.year, localStart.month, localStart.day);
     return { label: 'last 7 days', startDate, endDate: endOfDay(now) };
   }
 
   if (input.includes('yesterday')) {
-    const date = new Date(now);
-    date.setDate(date.getDate() - 1);
+    const localYesterday = addLocalDays(localDateFromDate(now), -1);
+    const date = zonedDateToUtc(localYesterday.year, localYesterday.month, localYesterday.day);
     return { label: 'yesterday', startDate: startOfDay(date), endDate: endOfDay(date) };
   }
 
@@ -287,7 +394,7 @@ function parseLogsRange(userInput: string): { label: string; startDate: Date; en
   const specificDate = parseSpecificDate(input);
   if (specificDate) {
     return {
-      label: specificDate.toLocaleDateString('en-SG', { year: 'numeric', month: 'short', day: 'numeric' }),
+      label: specificDate.toLocaleDateString('en-SG', { year: 'numeric', month: 'short', day: 'numeric', timeZone: config.appTimezone }),
       startDate: startOfDay(specificDate),
       endDate: endOfDay(specificDate),
     };
@@ -303,6 +410,7 @@ function parseLogsRange(userInput: string): { label: string; startDate: Date; en
 
 function formatMealTime(timestamp: string): string {
   return new Date(timestamp).toLocaleString('en-SG', {
+    timeZone: config.appTimezone,
     month: 'short',
     day: 'numeric',
     hour: '2-digit',
@@ -470,7 +578,11 @@ export async function handleGoal(request: AgentRequest): Promise<AgentResponse<U
 
 export async function handleLog(request: AgentRequest, image?: { data: string; mimeType: string }): Promise<AgentResponse<Meal | null>> {
   try {
-    const text = cleanCommand(request.userInput, 'log') || request.userInput;
+    const isLogCommand = /^\/log(?:@\w+)?(?:\s|$)/i.test(request.userInput);
+    const text = isLogCommand ? cleanCommand(request.userInput, 'log') : request.userInput;
+    if (!image && !text.trim()) {
+      return response(Intent.LOG, false, null, '🦖 Rawr? I think you forgot the food. I can’t crunch invisible lunch — tell me what you ate or send a meal photo.');
+    }
     const nutrition = await estimateNutrition(text, image);
     const meal: Meal = {
       id: mealId(),
@@ -491,7 +603,16 @@ export async function handleLog(request: AgentRequest, image?: { data: string; m
 
 export async function handleAnalyze(request: AgentRequest, image?: { data: string; mimeType: string }): Promise<AgentResponse<NutritionData | null>> {
   try {
-    const text = cleanCommand(request.userInput, 'analyse') || cleanCommand(request.userInput, 'analyze') || request.userInput;
+    const isAnalyseCommand = /^\/analyse(?:@\w+)?(?:\s|$)/i.test(request.userInput);
+    const isAnalyzeCommand = /^\/analyze(?:@\w+)?(?:\s|$)/i.test(request.userInput);
+    const text = isAnalyseCommand
+      ? cleanCommand(request.userInput, 'analyse')
+      : isAnalyzeCommand
+        ? cleanCommand(request.userInput, 'analyze')
+        : request.userInput;
+    if (!image && !text.trim()) {
+      return response(Intent.ANALYZE, false, null, '🦖 Tiny problem: my dino brain needs an actual meal to analyse. Try /analyse chicken rice, or send me a food photo.');
+    }
     const nutrition = await estimateNutrition(text, image);
     return response(Intent.ANALYZE, true, nutrition, `Analysis: ${nutrition.food}\n${nutrition.calories} cal | Protein ${nutrition.protein}g | Carbs ${nutrition.carbs}g | Fat ${nutrition.fat}g | Sugar ${nutrition.sugar}g\nConfidence: ${Math.round(nutrition.confidence * 100)}%`);
   } catch (error) {

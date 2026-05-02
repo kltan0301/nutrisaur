@@ -3,10 +3,63 @@
     "276047552": {
       "id": "276047552",
       "chatId": 276047552,
-      "meals": [],
+      "meals": [
+        {
+          "id": "meal_1777704105337_ega8ol",
+          "userId": "276047552",
+          "chatId": 276047552,
+          "source": "text",
+          "rawInput": "1 scrambled egg",
+          "nutrition": {
+            "food": "1 scrambled egg",
+            "calories": 75,
+            "protein": 6,
+            "carbs": 1,
+            "fat": 5,
+            "sugar": 1,
+            "confidence": 0.9
+          },
+          "timestamp": "2026-05-02T06:41:45.337Z"
+        }
+      ],
       "createdAt": "2026-05-02T06:10:12.652Z",
-      "updatedAt": "2026-05-02T06:10:12.652Z"
+      "updatedAt": "2026-05-02T06:41:45.337Z"
     }
   },
-  "nutritionCache": {}
+  "nutritionCache": {
+    "text:1 scrambled egg": {
+      "key": "text:1 scrambled egg",
+      "source": "text",
+      "input": "1 scrambled egg",
+      "nutrition": {
+        "food": "1 scrambled egg",
+        "calories": 75,
+        "protein": 6,
+        "carbs": 1,
+        "fat": 5,
+        "sugar": 1,
+        "confidence": 0.9
+      },
+      "createdAt": "2026-05-02T06:41:45.336Z",
+      "updatedAt": "2026-05-02T06:41:45.336Z",
+      "hitCount": 0
+    },
+    "text:1 serving of greek style yoghurt with granola": {
+      "key": "text:1 serving of greek style yoghurt with granola",
+      "source": "text",
+      "input": "1 serving of greek style yoghurt with granola",
+      "nutrition": {
+        "food": "Greek style yoghurt with granola",
+        "calories": 350,
+        "protein": 15,
+        "carbs": 40,
+        "fat": 15,
+        "sugar": 20,
+        "confidence": 0.8
+      },
+      "createdAt": "2026-05-02T06:52:16.140Z",
+      "updatedAt": "2026-05-02T06:52:16.140Z",
+      "hitCount": 0
+    }
+  }
 }
