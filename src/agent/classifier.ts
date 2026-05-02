@@ -10,7 +10,8 @@ export function classifyIntent(userInput: string, hasPhoto = false): Intent {
   if (input.startsWith('/analyse') || input.startsWith('/analyze')) return Intent.ANALYZE;
   if (input.startsWith('/summary')) return Intent.SUMMARY;
   if (input.startsWith('/recommend')) return Intent.RECOMMEND;
-  if (input.startsWith('/start') || input.startsWith('/help')) return Intent.HELP;
+  if (input.startsWith('/start')) return Intent.START;
+  if (input.startsWith('/help')) return Intent.HELP;
 
   if (hasPhoto) return Intent.ANALYZE;
   if (/\b(i ate|i have eaten|today i ate|just ate|had|consumed)\b/i.test(input)) return Intent.LOG;

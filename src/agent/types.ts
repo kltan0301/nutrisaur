@@ -6,6 +6,7 @@ export enum Intent {
   ANALYZE = 'ANALYZE',
   SUMMARY = 'SUMMARY',
   RECOMMEND = 'RECOMMEND',
+  START = 'START',
   HELP = 'HELP',
 }
 

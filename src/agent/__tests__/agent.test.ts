@@ -6,6 +6,8 @@ function assert(condition: boolean, message: string): void {
 
 async function runAllTests(): Promise<void> {
   assert(classifyIntent('/goal') === Intent.GOAL, 'Expected /goal to classify as GOAL');
+  assert(classifyIntent('/start') === Intent.START, 'Expected /start to classify as START');
+  assert(classifyIntent('/help') === Intent.HELP, 'Expected /help to classify as HELP');
   assert(classifyIntent('/edit_log today') === Intent.EDIT_LOG, 'Expected /edit_log to classify as EDIT_LOG');
   assert(classifyIntent('/logs today') === Intent.LOGS, 'Expected /logs to classify as LOGS');
   assert(classifyIntent('/log chicken rice') === Intent.LOG, 'Expected /log to classify as LOG');

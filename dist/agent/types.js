@@ -10,6 +10,7 @@ var Intent;
     Intent["ANALYZE"] = "ANALYZE";
     Intent["SUMMARY"] = "SUMMARY";
     Intent["RECOMMEND"] = "RECOMMEND";
+    Intent["START"] = "START";
     Intent["HELP"] = "HELP";
 })(Intent || (exports.Intent = Intent = {}));
 //# sourceMappingURL=types.js.map

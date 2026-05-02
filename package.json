@@ -7,7 +7,9 @@
     "dev": "nodemon --exec ts-node src/server.ts",
     "build": "tsc",
     "build:run": "tsc && node dist/server.js",
-    "test": "ts-node src/agent/__tests__/agent.test.ts"
+    "test": "ts-node src/agent/__tests__/agent.test.ts",
+    "dev:local": "SUPABASE_URL= SUPABASE_SERVICE_ROLE_KEY= DATA_FILE=data/nutrisaur.local.json nodemon --exec ts-node src/server.ts",
+    "test:local": "SUPABASE_URL= SUPABASE_SERVICE_ROLE_KEY= DATA_FILE=/private/tmp/nutrisaur-test.json ts-node src/agent/__tests__/agent.test.ts"
   },
   "keywords": [],
   "author": "",

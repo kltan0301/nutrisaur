@@ -95,6 +95,8 @@ POST /webhook_<WEBHOOK_SECRET>
 ## Commands
 
 - `/goal` - guided goal setup and editing
+- `/start` - welcome message
+- `/help` - commands, examples, and limitations
 - `/log <meal>` - analyse and save a meal
 - `/logs <duration>` - show logged meals for `today`, `yesterday`, `last monday`, a date, or a range like `this week`
 - `/edit_log <duration>` - show logged meals with inline delete buttons

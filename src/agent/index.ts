@@ -9,6 +9,7 @@ import {
   handleLog,
   handleLogs,
   handleRecommend,
+  handleStart,
   handleSummary,
 } from './handlers';
 import { AgentRequest, AgentResponse, Intent } from './types';
@@ -50,6 +51,8 @@ export async function runAgent(request: AgentRequest): Promise<AgentResponse> {
         return handleSummary(request);
       case Intent.RECOMMEND:
         return handleRecommend(request);
+      case Intent.START:
+        return handleStart();
       case Intent.HELP:
       default:
         return handleHelp();
@@ -71,7 +74,7 @@ export async function runAgent(request: AgentRequest): Promise<AgentResponse> {
 export { classifyIntent } from './classifier';
 export { nutritionStore } from './db';
 export { Intent } from './types';
-export { handleAnalyze, handleDeleteLog, handleEditLog, handleGoal, handleHelp, handleLog, handleLogs, handleRecommend, handleSummary } from './handlers';
+export { handleAnalyze, handleDeleteLog, handleEditLog, handleGoal, handleHelp, handleLog, handleLogs, handleRecommend, handleStart, handleSummary } from './handlers';
 export type {
   ActivityLevel,
   AgentRequest,

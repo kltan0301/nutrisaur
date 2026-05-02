@@ -6,6 +6,7 @@ export declare enum Intent {
     ANALYZE = "ANALYZE",
     SUMMARY = "SUMMARY",
     RECOMMEND = "RECOMMEND",
+    START = "START",
     HELP = "HELP"
 }
 export type GoalType = 'lose_weight' | 'maintain_weight' | 'gain_weight';

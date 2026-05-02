@@ -18,7 +18,9 @@ function classifyIntent(userInput, hasPhoto = false) {
         return types_1.Intent.SUMMARY;
     if (input.startsWith('/recommend'))
         return types_1.Intent.RECOMMEND;
-    if (input.startsWith('/start') || input.startsWith('/help'))
+    if (input.startsWith('/start'))
+        return types_1.Intent.START;
+    if (input.startsWith('/help'))
         return types_1.Intent.HELP;
     if (hasPhoto)
         return types_1.Intent.ANALYZE;

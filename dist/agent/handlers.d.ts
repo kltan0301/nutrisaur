@@ -13,6 +13,7 @@ export declare function handleLogs(request: AgentRequest): Promise<AgentResponse
 export declare function handleEditLog(request: AgentRequest): Promise<AgentResponse<LogsData>>;
 export declare function handleDeleteLog(userId: string, mealId: string): Promise<AgentResponse<Meal | null>>;
 export declare function handleRecommend(request: AgentRequest): Promise<AgentResponse<RecommendationData | null>>;
+export declare function handleStart(): Promise<AgentResponse<null>>;
 export declare function handleHelp(): Promise<AgentResponse<null>>;
 export declare function getUserRecord(request: AgentRequest): Promise<UserRecord>;
 //# sourceMappingURL=handlers.d.ts.map

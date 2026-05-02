@@ -639,8 +639,39 @@ export async function handleRecommend(request: AgentRequest): Promise<AgentRespo
   }
 }
 
+export async function handleStart(): Promise<AgentResponse<null>> {
+  return response(Intent.START, true, null, `🦖 Rawr! I’m Nutrisaur — your prehistoric nutrition expert.
+
+Tell me what you ate, and I’ll crunch the numbers faster than a T-Rex chomps lunch.
+
+Try:
+• “I ate chicken rice”
+• “How many calories in ramen?”
+• /summary`);
+}
+
 export async function handleHelp(): Promise<AgentResponse<null>> {
-  return response(Intent.HELP, true, null, `Nutrisaur commands\n/goal - set or edit your calorie goal\n/log chicken rice - analyse and save a meal\n/logs today|yesterday|last monday|2026-05-02|this week - show logged meals\n/edit_log today|yesterday|last monday|2026-05-02|this week - delete logged meals with buttons\n/analyse chicken rice - analyse without saving\n/summary by day|week|month - totals and averages\n/recommend hawker|home|restaurant - food ideas based on your goal\n\nYou can also type "I ate chicken rice" or send a food photo with /log or /analyse.`);
+  return response(Intent.HELP, true, null, `Available commands
+/start - Meet Nutrisaur
+/goal - Set or edit your calorie goal
+/log chicken rice - Analyse and save a meal
+/logs today - Show logged meals
+/edit_log today - Delete logged meals with buttons
+/analyse ramen - Analyse without saving
+/summary by day|week|month - Show totals and averages
+/recommend hawker|home|restaurant - Get goal-aware food ideas
+
+Natural language examples
+• I ate chicken rice
+• Today I ate nasi lemak
+• How many calories in ramen?
+• Analyse a tuna sandwich
+
+Limitations
+• Nutrition values are estimates, not medical advice.
+• Photo analysis depends on image clarity and visible portions.
+• Homemade or mixed dishes can vary a lot by recipe.
+• For best results, include portion size, sauces, drinks, and add-ons.`);
 }
 
 function response<T>(intent: Intent, success: boolean, data: T, message: string, error?: string, replyMarkup?: unknown): AgentResponse<T> {

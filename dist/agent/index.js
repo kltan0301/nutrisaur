@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.handleSummary = exports.handleRecommend = exports.handleLogs = exports.handleLog = exports.handleHelp = exports.handleGoal = exports.handleEditLog = exports.handleDeleteLog = exports.handleAnalyze = exports.Intent = exports.nutritionStore = exports.classifyIntent = void 0;
+exports.handleSummary = exports.handleStart = exports.handleRecommend = exports.handleLogs = exports.handleLog = exports.handleHelp = exports.handleGoal = exports.handleEditLog = exports.handleDeleteLog = exports.handleAnalyze = exports.Intent = exports.nutritionStore = exports.classifyIntent = void 0;
 exports.runAgent = runAgent;
 const telegram_1 = require("../services/telegram");
 const classifier_1 = require("./classifier");
@@ -39,6 +39,8 @@ async function runAgent(request) {
                 return (0, handlers_1.handleSummary)(request);
             case types_1.Intent.RECOMMEND:
                 return (0, handlers_1.handleRecommend)(request);
+            case types_1.Intent.START:
+                return (0, handlers_1.handleStart)();
             case types_1.Intent.HELP:
             default:
                 return (0, handlers_1.handleHelp)();
@@ -72,5 +74,6 @@ Object.defineProperty(exports, "handleHelp", { enumerable: true, get: function (
 Object.defineProperty(exports, "handleLog", { enumerable: true, get: function () { return handlers_2.handleLog; } });
 Object.defineProperty(exports, "handleLogs", { enumerable: true, get: function () { return handlers_2.handleLogs; } });
 Object.defineProperty(exports, "handleRecommend", { enumerable: true, get: function () { return handlers_2.handleRecommend; } });
+Object.defineProperty(exports, "handleStart", { enumerable: true, get: function () { return handlers_2.handleStart; } });
 Object.defineProperty(exports, "handleSummary", { enumerable: true, get: function () { return handlers_2.handleSummary; } });
 //# sourceMappingURL=index.js.map

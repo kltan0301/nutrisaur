@@ -7,6 +7,8 @@ function assert(condition, message) {
 }
 async function runAllTests() {
     assert((0, index_1.classifyIntent)('/goal') === index_1.Intent.GOAL, 'Expected /goal to classify as GOAL');
+    assert((0, index_1.classifyIntent)('/start') === index_1.Intent.START, 'Expected /start to classify as START');
+    assert((0, index_1.classifyIntent)('/help') === index_1.Intent.HELP, 'Expected /help to classify as HELP');
     assert((0, index_1.classifyIntent)('/edit_log today') === index_1.Intent.EDIT_LOG, 'Expected /edit_log to classify as EDIT_LOG');
     assert((0, index_1.classifyIntent)('/logs today') === index_1.Intent.LOGS, 'Expected /logs to classify as LOGS');
     assert((0, index_1.classifyIntent)('/log chicken rice') === index_1.Intent.LOG, 'Expected /log to classify as LOG');
