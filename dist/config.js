@@ -14,6 +14,8 @@ exports.config = {
     geminiApiKey: process.env.GEMINI_API_KEY || '',
     geminiModel: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
     dataFile: process.env.DATA_FILE || 'data/nutrisaur.json',
+    supabaseUrl: process.env.SUPABASE_URL || '',
+    supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
 };
 // Validate required env vars
 if (!exports.config.telegramBotToken) {

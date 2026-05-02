@@ -16,11 +16,13 @@ Photos can be sent with `/log` or `/analyse` in the caption. A photo without a c
 
 ## Storage
 
-The default store is a per-user JSON file at `DATA_FILE` or `data/nutrisaur.json`. This keeps the app dependency-light and free to run locally. It stores user goals, meal logs, and a global nutrition cache.
+The production store is Supabase Postgres when `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are configured. Run `supabase_schema.sql` once in Supabase SQL Editor to create the tables.
+
+The local fallback store is a per-user JSON file at `DATA_FILE` or `data/nutrisaur.json`. This keeps the app dependency-light and free to run locally. It stores user goals, meal logs, and a global nutrition cache.
 
 The nutrition cache avoids repeat Gemini calls for the same normalized text meal, such as `/log chicken rice` and `I have eaten chicken rice`. Photo meals are cached by a SHA-256 hash of the Telegram image bytes plus caption, so resending the same photo can reuse the previous estimate.
 
-For production on hosts with ephemeral disks, swap `src/agent/db.ts` behind the same store methods for a free hosted DB such as Supabase, Firebase, or Turso.
+For production on hosts with ephemeral disks, use Supabase so meal logs and goals survive restarts.
 
 ## Gemini
 

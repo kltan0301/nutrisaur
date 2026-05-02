@@ -35,6 +35,8 @@ GEMINI_API_KEY=your_gemini_key_here
 GEMINI_MODEL=gemini-2.5-flash
 WEBHOOK_SECRET=your_secret_key_here
 DATA_FILE=data/nutrisaur.json
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your_server_side_service_role_key
 PORT=3000
 NODE_ENV=production
 ```
@@ -151,7 +153,9 @@ Expected response: `{ "ok": true }`
 | TELEGRAM_BOT_TOKEN | (required) | Your bot token from BotFather |
 | GEMINI_API_KEY | (required for analysis) | Gemini API key |
 | GEMINI_MODEL | gemini-2.5-flash | Gemini model for text and image analysis |
-| DATA_FILE | data/nutrisaur.json | JSON persistence path |
+| DATA_FILE | data/nutrisaur.json | JSON persistence path when Supabase is not configured |
+| SUPABASE_URL | (optional) | Supabase project URL for hosted Postgres storage |
+| SUPABASE_SERVICE_ROLE_KEY | (optional) | Server-only Supabase key for DB REST access |
 | NODE_ENV | development | Environment mode |
 
 ## Next Steps for Production
@@ -162,7 +166,7 @@ Expected response: `{ "ok": true }`
    ```bash
    curl "https://api.telegram.org/bot{TOKEN}/setWebhook?url=https://your-domain.com/webhook_{SECRET}"
    ```
-4. **Use persistent storage** - The JSON file works on hosts with persistent disk. On ephemeral free hosts, replace `src/agent/db.ts` with Supabase/Firebase/Turso.
+4. **Use persistent storage** - Run `supabase_schema.sql` in Supabase SQL Editor, then set `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`.
 5. **Monitor logs** - Set up log aggregation
 6. **Add rate limiting** - Implement if needed
 
