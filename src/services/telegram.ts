@@ -1,6 +1,16 @@
 import axios from 'axios';
+import fs from 'fs/promises';
 import { config } from '../config';
 import { TelegramUpdate, LogEntry } from '../types/telegram';
+
+async function logTelegramSend(message: string): Promise<void> {
+  try {
+    await fs.mkdir('data', { recursive: true });
+    await fs.appendFile('data/telegram-send.log', `[${new Date().toISOString()}] ${message}\n`);
+  } catch {
+    // Logging must not block bot replies.
+  }
+}
 
 /**
  * Detect intent from message text using keyword matching
@@ -37,6 +47,20 @@ export function parseUpdate(body: any): LogEntry {
   try {
     const update: TelegramUpdate = body;
 
+    if (update.callback_query) {
+      const callback = update.callback_query;
+      return {
+        timestamp: new Date().toISOString(),
+        chatId: callback.message?.chat.id || callback.from.id,
+        userId: callback.from.id,
+        text: callback.message?.text,
+        callbackQueryId: callback.id,
+        callbackData: callback.data,
+        callbackMessageId: callback.message?.message_id,
+        intent: 'callback',
+      };
+    }
+
     // Get the message from various possible fields
     const message = update.message || update.edited_message || update.channel_post || update.edited_channel_post;
 
@@ -71,18 +95,46 @@ export function parseUpdate(body: any): LogEntry {
   }
 }
 
+export function telegramMethod(method: string, payload: Record<string, unknown>): Record<string, unknown> {
+  return { method, ...payload };
+}
+
 export async function sendMessage(chatId: number, text: string, replyMarkup?: unknown): Promise<void> {
   if (!config.telegramBotToken) {
+    await logTelegramSend(`skip chat=${chatId} reason=missing_token text=${text.slice(0, 80)}`);
     console.log(`[${new Date().toISOString()}] Telegram send skipped: TELEGRAM_BOT_TOKEN missing`);
     console.log(text);
     return;
   }
 
-  await axios.post(`https://api.telegram.org/bot${config.telegramBotToken}/sendMessage`, {
-    chat_id: chatId,
-    text,
-    reply_markup: replyMarkup,
-  });
+  try {
+    await logTelegramSend(`start chat=${chatId} text=${text.slice(0, 80)}`);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+
+    const response = await fetch(`https://api.telegram.org/bot${config.telegramBotToken}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text,
+        reply_markup: replyMarkup,
+      }),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeout);
+    const body = await response.json() as { ok?: boolean; result?: { message_id?: number }; description?: string };
+    if (!response.ok || !body.ok) {
+      throw new Error(JSON.stringify(body));
+    }
+
+    await logTelegramSend(`ok chat=${chatId} message_id=${body.result?.message_id ?? 'unknown'} text=${text.slice(0, 80)}`);
+  } catch (error) {
+    const axiosError = error as { response?: { data?: unknown }; message?: string };
+    await logTelegramSend(`error chat=${chatId} error=${JSON.stringify(axiosError.response?.data || axiosError.message)} text=${text.slice(0, 80)}`);
+    throw error;
+  }
 }
 
 export async function downloadTelegramFile(fileId: string): Promise<{ data: string; mimeType: string }> {
@@ -118,6 +170,6 @@ export function isValidUpdate(body: any): boolean {
     body &&
     typeof body === 'object' &&
     typeof body.update_id === 'number' &&
-    (body.message || body.edited_message || body.channel_post || body.edited_channel_post)
+    (body.message || body.edited_message || body.channel_post || body.edited_channel_post || body.callback_query)
   );
 }

@@ -4,11 +4,22 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.parseUpdate = parseUpdate;
+exports.telegramMethod = telegramMethod;
 exports.sendMessage = sendMessage;
 exports.downloadTelegramFile = downloadTelegramFile;
 exports.isValidUpdate = isValidUpdate;
 const axios_1 = __importDefault(require("axios"));
+const promises_1 = __importDefault(require("fs/promises"));
 const config_1 = require("../config");
+async function logTelegramSend(message) {
+    try {
+        await promises_1.default.mkdir('data', { recursive: true });
+        await promises_1.default.appendFile('data/telegram-send.log', `[${new Date().toISOString()}] ${message}\n`);
+    }
+    catch {
+        // Logging must not block bot replies.
+    }
+}
 /**
  * Detect intent from message text using keyword matching
  * Returns a simple intent string for logging
@@ -38,6 +49,19 @@ function detectIntent(text) {
 function parseUpdate(body) {
     try {
         const update = body;
+        if (update.callback_query) {
+            const callback = update.callback_query;
+            return {
+                timestamp: new Date().toISOString(),
+                chatId: callback.message?.chat.id || callback.from.id,
+                userId: callback.from.id,
+                text: callback.message?.text,
+                callbackQueryId: callback.id,
+                callbackData: callback.data,
+                callbackMessageId: callback.message?.message_id,
+                intent: 'callback',
+            };
+        }
         // Get the message from various possible fields
         const message = update.message || update.edited_message || update.channel_post || update.edited_channel_post;
         if (!message) {
@@ -69,17 +93,42 @@ function parseUpdate(body) {
         };
     }
 }
+function telegramMethod(method, payload) {
+    return { method, ...payload };
+}
 async function sendMessage(chatId, text, replyMarkup) {
     if (!config_1.config.telegramBotToken) {
+        await logTelegramSend(`skip chat=${chatId} reason=missing_token text=${text.slice(0, 80)}`);
         console.log(`[${new Date().toISOString()}] Telegram send skipped: TELEGRAM_BOT_TOKEN missing`);
         console.log(text);
         return;
     }
-    await axios_1.default.post(`https://api.telegram.org/bot${config_1.config.telegramBotToken}/sendMessage`, {
-        chat_id: chatId,
-        text,
-        reply_markup: replyMarkup,
-    });
+    try {
+        await logTelegramSend(`start chat=${chatId} text=${text.slice(0, 80)}`);
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 8000);
+        const response = await fetch(`https://api.telegram.org/bot${config_1.config.telegramBotToken}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                chat_id: chatId,
+                text,
+                reply_markup: replyMarkup,
+            }),
+            signal: controller.signal,
+        });
+        clearTimeout(timeout);
+        const body = await response.json();
+        if (!response.ok || !body.ok) {
+            throw new Error(JSON.stringify(body));
+        }
+        await logTelegramSend(`ok chat=${chatId} message_id=${body.result?.message_id ?? 'unknown'} text=${text.slice(0, 80)}`);
+    }
+    catch (error) {
+        const axiosError = error;
+        await logTelegramSend(`error chat=${chatId} error=${JSON.stringify(axiosError.response?.data || axiosError.message)} text=${text.slice(0, 80)}`);
+        throw error;
+    }
 }
 async function downloadTelegramFile(fileId) {
     if (!config_1.config.telegramBotToken) {
@@ -108,6 +157,6 @@ function isValidUpdate(body) {
     return (body &&
         typeof body === 'object' &&
         typeof body.update_id === 'number' &&
-        (body.message || body.edited_message || body.channel_post || body.edited_channel_post));
+        (body.message || body.edited_message || body.channel_post || body.edited_channel_post || body.callback_query));
 }
 //# sourceMappingURL=telegram.js.map

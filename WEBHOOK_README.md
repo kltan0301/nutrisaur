@@ -94,6 +94,8 @@ POST /webhook_<WEBHOOK_SECRET>
 
 - `/goal` - guided goal setup and editing
 - `/log <meal>` - analyse and save a meal
+- `/logs <duration>` - show logged meals for `today`, `yesterday`, `last monday`, a date, or a range like `this week`
+- `/edit_log <duration>` - show logged meals with inline delete buttons
 - `/analyse <meal>` - analyse without saving
 - `/summary by day|week|month` - totals and averages
 - `/recommend <place>` - goal-aware food recommendations

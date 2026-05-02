@@ -3,9 +3,11 @@ import { classifyIntent } from './classifier';
 import {
   getUserRecord,
   handleAnalyze,
+  handleEditLog,
   handleGoal,
   handleHelp,
   handleLog,
+  handleLogs,
   handleRecommend,
   handleSummary,
 } from './handlers';
@@ -38,6 +40,10 @@ export async function runAgent(request: AgentRequest): Promise<AgentResponse> {
         return handleGoal(request);
       case Intent.LOG:
         return handleLog(request, image);
+      case Intent.LOGS:
+        return handleLogs(request);
+      case Intent.EDIT_LOG:
+        return handleEditLog(request);
       case Intent.ANALYZE:
         return handleAnalyze(request, image);
       case Intent.SUMMARY:
@@ -65,13 +71,14 @@ export async function runAgent(request: AgentRequest): Promise<AgentResponse> {
 export { classifyIntent } from './classifier';
 export { nutritionStore } from './db';
 export { Intent } from './types';
-export { handleAnalyze, handleGoal, handleHelp, handleLog, handleRecommend, handleSummary } from './handlers';
+export { handleAnalyze, handleDeleteLog, handleEditLog, handleGoal, handleHelp, handleLog, handleLogs, handleRecommend, handleSummary } from './handlers';
 export type {
   ActivityLevel,
   AgentRequest,
   AgentResponse,
   Gender,
   GoalType,
+  LogsData,
   Meal,
   NutritionData,
   RecommendationData,

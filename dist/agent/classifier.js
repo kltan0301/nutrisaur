@@ -6,6 +6,10 @@ function classifyIntent(userInput, hasPhoto = false) {
     const input = (userInput || '').trim().toLowerCase();
     if (input.startsWith('/goal'))
         return types_1.Intent.GOAL;
+    if (input.startsWith('/edit_log'))
+        return types_1.Intent.EDIT_LOG;
+    if (input.startsWith('/logs'))
+        return types_1.Intent.LOGS;
     if (input.startsWith('/log'))
         return types_1.Intent.LOG;
     if (input.startsWith('/analyse') || input.startsWith('/analyze'))

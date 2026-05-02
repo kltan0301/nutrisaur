@@ -44,6 +44,12 @@ export interface TelegramUpdate {
     edited_message?: TelegramMessage;
     channel_post?: TelegramMessage;
     edited_channel_post?: TelegramMessage;
+    callback_query?: {
+        id: string;
+        from: TelegramUser;
+        message?: TelegramMessage;
+        data?: string;
+    };
 }
 export interface LogEntry {
     timestamp: string;
@@ -51,6 +57,9 @@ export interface LogEntry {
     userId?: number;
     text?: string;
     photoFileId?: string;
+    callbackQueryId?: string;
+    callbackData?: string;
+    callbackMessageId?: number;
     intent: string;
 }
 //# sourceMappingURL=telegram.d.ts.map

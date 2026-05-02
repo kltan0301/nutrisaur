@@ -1,6 +1,8 @@
 export declare enum Intent {
     GOAL = "GOAL",
     LOG = "LOG",
+    LOGS = "LOGS",
+    EDIT_LOG = "EDIT_LOG",
     ANALYZE = "ANALYZE",
     SUMMARY = "SUMMARY",
     RECOMMEND = "RECOMMEND",
@@ -78,6 +80,12 @@ export interface SummaryData {
     totals: SummaryTotals;
     averagePerDay: SummaryTotals;
     remainingCalories?: number;
+    meals: Meal[];
+}
+export interface LogsData {
+    label: string;
+    startDate: string;
+    endDate: string;
     meals: Meal[];
 }
 export interface RecommendationData {

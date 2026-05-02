@@ -104,6 +104,17 @@ class JsonNutritionStore {
     });
   }
 
+  async deleteMeal(userId: string, mealId: string): Promise<Meal | null> {
+    const user = await this.getUser(userId);
+    const mealIndex = user.meals.findIndex((meal) => meal.id === mealId);
+    if (mealIndex < 0) return null;
+
+    const [deletedMeal] = user.meals.splice(mealIndex, 1);
+    user.updatedAt = new Date().toISOString();
+    await this.save();
+    return deletedMeal;
+  }
+
   async getCachedNutrition(key: string): Promise<NutritionCacheEntry | null> {
     await this.load();
     const entry = this.data.nutritionCache[key];

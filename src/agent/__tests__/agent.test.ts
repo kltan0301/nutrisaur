@@ -5,16 +5,16 @@ function assert(condition: boolean, message: string): void {
 }
 
 async function runAllTests(): Promise<void> {
-  await nutritionStore.clear();
-
   assert(classifyIntent('/goal') === Intent.GOAL, 'Expected /goal to classify as GOAL');
+  assert(classifyIntent('/edit_log today') === Intent.EDIT_LOG, 'Expected /edit_log to classify as EDIT_LOG');
+  assert(classifyIntent('/logs today') === Intent.LOGS, 'Expected /logs to classify as LOGS');
   assert(classifyIntent('/log chicken rice') === Intent.LOG, 'Expected /log to classify as LOG');
   assert(classifyIntent('/analyse chicken rice') === Intent.ANALYZE, 'Expected /analyse to classify as ANALYZE');
   assert(classifyIntent('/summary by week') === Intent.SUMMARY, 'Expected /summary to classify as SUMMARY');
   assert(classifyIntent('/recommend hawker') === Intent.RECOMMEND, 'Expected /recommend to classify as RECOMMEND');
   assert(classifyIntent('I have eaten chicken rice') === Intent.LOG, 'Expected natural meal text to classify as LOG');
 
-  const base = { userId: 123, chatId: 456 };
+  const base = { userId: 900001, chatId: 900001 };
   let response = await handleGoal({ ...base, userInput: '/goal' });
   assert(response.success, 'Expected /goal to start successfully');
 
@@ -29,6 +29,23 @@ async function runAllTests(): Promise<void> {
 
   response = await handleGoal({ ...base, userInput: '32 175 72' });
   assert(response.success && Boolean(response.data), 'Expected body stats to save a goal');
+  assert(response.data?.gender === 'male', 'Expected male to be saved as male');
+
+  const femaleBase = { userId: 900002, chatId: 900002 };
+  response = await handleGoal({ ...femaleBase, userInput: '/goal' });
+  assert(response.success, 'Expected second /goal to start successfully');
+
+  response = await handleGoal({ ...femaleBase, userInput: '1' });
+  assert(response.success, 'Expected female goal choice to advance');
+
+  response = await handleGoal({ ...femaleBase, userInput: 'Female' });
+  assert(response.success && response.message.toLowerCase().includes('activity'), 'Expected Female to ask activity');
+
+  response = await handleGoal({ ...femaleBase, userInput: '3' });
+  assert(response.success, 'Expected female activity step to advance');
+
+  response = await handleGoal({ ...femaleBase, userInput: '32 165 60' });
+  assert(response.success && response.data?.gender === 'female', 'Expected Female to be saved as female');
 
   console.log('All Nutrisaur agent tests passed');
 }

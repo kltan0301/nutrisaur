@@ -6,6 +6,8 @@ Nutrisaur is a Telegram nutrition tracker powered by Gemini. It supports text me
 
 - `/goal` starts a guided flow for goal, gender, activity level, age, height, and weight. It calculates BMR, maintenance calories, a daily calorie target, and a protein target. Run `/goal` again to edit.
 - `/log <meal>` analyses and saves a meal. Natural text like `I have eaten chicken rice` is treated as a log too.
+- `/logs <duration>` shows the meals logged for a date or range. Examples: `today`, `yesterday`, `last monday`, `2026-05-02`, `02/05/2026`, `this week`, `last week`, `last 7 days`.
+- `/edit_log <duration>` shows the meals logged for a date or range with Telegram inline `Delete` buttons for easy removal.
 - `/analyse <meal>` or `/analyze <meal>` analyses without saving.
 - `/summary by day|week|month` returns totals, averages, and remaining calories for the day when a goal exists.
 - `/recommend <place>` gives goal-aware options for places like `hawker`, `home`, `restaurant`, `stuff'd`, or `sushi`. For `home`, prompts constrain ideas to easy NTUC-available ingredients.

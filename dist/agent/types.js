@@ -5,6 +5,8 @@ var Intent;
 (function (Intent) {
     Intent["GOAL"] = "GOAL";
     Intent["LOG"] = "LOG";
+    Intent["LOGS"] = "LOGS";
+    Intent["EDIT_LOG"] = "EDIT_LOG";
     Intent["ANALYZE"] = "ANALYZE";
     Intent["SUMMARY"] = "SUMMARY";
     Intent["RECOMMEND"] = "RECOMMEND";

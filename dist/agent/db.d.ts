@@ -12,6 +12,7 @@ declare class JsonNutritionStore {
     clearGoalDraft(userId: string): Promise<void>;
     addMeal(userId: string, meal: Meal, chatId?: number): Promise<Meal>;
     getMealsByDateRange(userId: string, startDate: Date, endDate: Date): Promise<Meal[]>;
+    deleteMeal(userId: string, mealId: string): Promise<Meal | null>;
     getCachedNutrition(key: string): Promise<NutritionCacheEntry | null>;
     setCachedNutrition(key: string, source: 'text' | 'image', input: string, nutrition: NutritionData): Promise<NutritionCacheEntry>;
     clear(): Promise<void>;

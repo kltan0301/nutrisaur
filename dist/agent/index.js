@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.handleSummary = exports.handleRecommend = exports.handleLog = exports.handleHelp = exports.handleGoal = exports.handleAnalyze = exports.Intent = exports.nutritionStore = exports.classifyIntent = void 0;
+exports.handleSummary = exports.handleRecommend = exports.handleLogs = exports.handleLog = exports.handleHelp = exports.handleGoal = exports.handleEditLog = exports.handleDeleteLog = exports.handleAnalyze = exports.Intent = exports.nutritionStore = exports.classifyIntent = void 0;
 exports.runAgent = runAgent;
 const telegram_1 = require("../services/telegram");
 const classifier_1 = require("./classifier");
@@ -29,6 +29,10 @@ async function runAgent(request) {
                 return (0, handlers_1.handleGoal)(request);
             case types_1.Intent.LOG:
                 return (0, handlers_1.handleLog)(request, image);
+            case types_1.Intent.LOGS:
+                return (0, handlers_1.handleLogs)(request);
+            case types_1.Intent.EDIT_LOG:
+                return (0, handlers_1.handleEditLog)(request);
             case types_1.Intent.ANALYZE:
                 return (0, handlers_1.handleAnalyze)(request, image);
             case types_1.Intent.SUMMARY:
@@ -61,9 +65,12 @@ var types_2 = require("./types");
 Object.defineProperty(exports, "Intent", { enumerable: true, get: function () { return types_2.Intent; } });
 var handlers_2 = require("./handlers");
 Object.defineProperty(exports, "handleAnalyze", { enumerable: true, get: function () { return handlers_2.handleAnalyze; } });
+Object.defineProperty(exports, "handleDeleteLog", { enumerable: true, get: function () { return handlers_2.handleDeleteLog; } });
+Object.defineProperty(exports, "handleEditLog", { enumerable: true, get: function () { return handlers_2.handleEditLog; } });
 Object.defineProperty(exports, "handleGoal", { enumerable: true, get: function () { return handlers_2.handleGoal; } });
 Object.defineProperty(exports, "handleHelp", { enumerable: true, get: function () { return handlers_2.handleHelp; } });
 Object.defineProperty(exports, "handleLog", { enumerable: true, get: function () { return handlers_2.handleLog; } });
+Object.defineProperty(exports, "handleLogs", { enumerable: true, get: function () { return handlers_2.handleLogs; } });
 Object.defineProperty(exports, "handleRecommend", { enumerable: true, get: function () { return handlers_2.handleRecommend; } });
 Object.defineProperty(exports, "handleSummary", { enumerable: true, get: function () { return handlers_2.handleSummary; } });
 //# sourceMappingURL=index.js.map

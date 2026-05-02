@@ -4,6 +4,8 @@ export function classifyIntent(userInput: string, hasPhoto = false): Intent {
   const input = (userInput || '').trim().toLowerCase();
 
   if (input.startsWith('/goal')) return Intent.GOAL;
+  if (input.startsWith('/edit_log')) return Intent.EDIT_LOG;
+  if (input.startsWith('/logs')) return Intent.LOGS;
   if (input.startsWith('/log')) return Intent.LOG;
   if (input.startsWith('/analyse') || input.startsWith('/analyze')) return Intent.ANALYZE;
   if (input.startsWith('/summary')) return Intent.SUMMARY;

@@ -12,6 +12,7 @@ import {
   GoalFlowStep,
   GoalType,
   Intent,
+  LogsData,
   Meal,
   NutritionData,
   RecommendationData,
@@ -197,6 +198,118 @@ function getDateRange(period: SummaryPeriod): { startDate: Date; endDate: Date; 
   return { startDate, endDate, dayCount };
 }
 
+function startOfDay(date: Date): Date {
+  const result = new Date(date);
+  result.setHours(0, 0, 0, 0);
+  return result;
+}
+
+function endOfDay(date: Date): Date {
+  const result = new Date(date);
+  result.setHours(23, 59, 59, 999);
+  return result;
+}
+
+function startOfWeek(date: Date): Date {
+  const result = startOfDay(date);
+  const day = result.getDay();
+  const daysSinceMonday = day === 0 ? 6 : day - 1;
+  result.setDate(result.getDate() - daysSinceMonday);
+  return result;
+}
+
+function parseSpecificDate(input: string): Date | null {
+  const iso = input.match(/\b(\d{4})-(\d{1,2})-(\d{1,2})\b/);
+  if (iso) {
+    const [, year, month, day] = iso;
+    const date = new Date(Number(year), Number(month) - 1, Number(day));
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  const slash = input.match(/\b(\d{1,2})\/(\d{1,2})\/(\d{4})\b/);
+  if (slash) {
+    const [, day, month, year] = slash;
+    const date = new Date(Number(year), Number(month) - 1, Number(day));
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  return null;
+}
+
+function parseWeekday(input: string): { date: Date; label: string } | null {
+  const weekdays = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  const lower = input.toLowerCase();
+  const weekdayIndex = weekdays.findIndex((day) => lower.includes(day));
+  if (weekdayIndex < 0) return null;
+
+  const today = startOfDay(new Date());
+  const currentDay = today.getDay();
+  let diff = currentDay - weekdayIndex;
+  if (lower.includes('last') || diff <= 0) diff += 7;
+
+  const date = new Date(today);
+  date.setDate(today.getDate() - diff);
+  return { date, label: lower.includes('last') ? `last ${weekdays[weekdayIndex]}` : weekdays[weekdayIndex] };
+}
+
+function parseLogsRange(userInput: string): { label: string; startDate: Date; endDate: Date } {
+  const input = cleanCommand(userInput, 'logs').toLowerCase() || 'today';
+  const now = new Date();
+
+  if (input.includes('this week')) {
+    const startDate = startOfWeek(now);
+    return { label: 'this week', startDate, endDate: endOfDay(now) };
+  }
+
+  if (input.includes('last week')) {
+    const endDate = new Date(startOfWeek(now));
+    endDate.setMilliseconds(-1);
+    const startDate = startOfWeek(endDate);
+    return { label: 'last week', startDate, endDate };
+  }
+
+  if (input.includes('last 7 days')) {
+    const startDate = startOfDay(now);
+    startDate.setDate(startDate.getDate() - 6);
+    return { label: 'last 7 days', startDate, endDate: endOfDay(now) };
+  }
+
+  if (input.includes('yesterday')) {
+    const date = new Date(now);
+    date.setDate(date.getDate() - 1);
+    return { label: 'yesterday', startDate: startOfDay(date), endDate: endOfDay(date) };
+  }
+
+  if (input.includes('today')) {
+    return { label: 'today', startDate: startOfDay(now), endDate: endOfDay(now) };
+  }
+
+  const specificDate = parseSpecificDate(input);
+  if (specificDate) {
+    return {
+      label: specificDate.toLocaleDateString('en-SG', { year: 'numeric', month: 'short', day: 'numeric' }),
+      startDate: startOfDay(specificDate),
+      endDate: endOfDay(specificDate),
+    };
+  }
+
+  const weekday = parseWeekday(input);
+  if (weekday) {
+    return { label: weekday.label, startDate: startOfDay(weekday.date), endDate: endOfDay(weekday.date) };
+  }
+
+  return { label: 'today', startDate: startOfDay(now), endDate: endOfDay(now) };
+}
+
+function formatMealTime(timestamp: string): string {
+  return new Date(timestamp).toLocaleString('en-SG', {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
 function parseGoalChoice(input: string): GoalType | null {
   const lower = input.toLowerCase();
   if (lower === '1' || lower.includes('lose')) return 'lose_weight';
@@ -206,9 +319,9 @@ function parseGoalChoice(input: string): GoalType | null {
 }
 
 function parseGender(input: string): Gender | null {
-  const lower = input.toLowerCase();
-  if (lower === 'm' || lower.includes('male')) return 'male';
-  if (lower === 'f' || lower.includes('female')) return 'female';
+  const lower = input.toLowerCase().trim();
+  if (lower === 'f' || lower === 'female' || lower === 'woman') return 'female';
+  if (lower === 'm' || lower === 'male' || lower === 'man') return 'male';
   return null;
 }
 
@@ -370,7 +483,7 @@ export async function handleLog(request: AgentRequest, image?: { data: string; m
     };
 
     await nutritionStore.addMeal(meal.userId, meal, request.chatId);
-    return response(Intent.LOG, true, meal, `Logged: ${nutrition.food}\n${nutrition.calories} cal | P ${nutrition.protein}g | C ${nutrition.carbs}g | F ${nutrition.fat}g | Sugar ${nutrition.sugar}g\nConfidence: ${Math.round(nutrition.confidence * 100)}%`);
+    return response(Intent.LOG, true, meal, `Logged: ${nutrition.food}\n${nutrition.calories} cal | Protein ${nutrition.protein}g | Carbs ${nutrition.carbs}g | Fat ${nutrition.fat}g | Sugar ${nutrition.sugar}g\nConfidence: ${Math.round(nutrition.confidence * 100)}%`);
   } catch (error) {
     return failure(Intent.LOG, error, 'I could not log that meal. Check GEMINI_API_KEY or try a clearer description.');
   }
@@ -380,7 +493,7 @@ export async function handleAnalyze(request: AgentRequest, image?: { data: strin
   try {
     const text = cleanCommand(request.userInput, 'analyse') || cleanCommand(request.userInput, 'analyze') || request.userInput;
     const nutrition = await estimateNutrition(text, image);
-    return response(Intent.ANALYZE, true, nutrition, `Analysis: ${nutrition.food}\n${nutrition.calories} cal | P ${nutrition.protein}g | C ${nutrition.carbs}g | F ${nutrition.fat}g | Sugar ${nutrition.sugar}g\nConfidence: ${Math.round(nutrition.confidence * 100)}%`);
+    return response(Intent.ANALYZE, true, nutrition, `Analysis: ${nutrition.food}\n${nutrition.calories} cal | Protein ${nutrition.protein}g | Carbs ${nutrition.carbs}g | Fat ${nutrition.fat}g | Sugar ${nutrition.sugar}g\nConfidence: ${Math.round(nutrition.confidence * 100)}%`);
   } catch (error) {
     return failure(Intent.ANALYZE, error, 'I could not analyse that meal. Try adding portion size or a clearer photo.');
   }
@@ -406,7 +519,7 @@ export async function handleSummary(request: AgentRequest): Promise<AgentRespons
   const remainingCalories = period === 'day' && user.goal ? user.goal.dailyCalories - roundedTotals.calories : undefined;
   const mealLines = meals.slice(-10).map((meal) => `- ${meal.nutrition.food}: ${meal.nutrition.calories} cal`).join('\n');
   const targetLine = user.goal && period === 'day' ? `\nRemaining today: ${remainingCalories} cal from ${user.goal.dailyCalories} cal target` : '';
-  const message = `Summary for ${period}\nMeals: ${meals.length}\nTotal: ${roundedTotals.calories} cal | P ${roundedTotals.protein}g | C ${roundedTotals.carbs}g | F ${roundedTotals.fat}g | Sugar ${roundedTotals.sugar}g\nAverage/day: ${averagePerDay.calories} cal | P ${averagePerDay.protein}g${targetLine}${mealLines ? `\n\nRecent meals:\n${mealLines}` : ''}`;
+  const message = `Summary for ${period}\nMeals: ${meals.length}\nTotal: ${roundedTotals.calories} cal | Protein ${roundedTotals.protein}g | Carbs ${roundedTotals.carbs}g | Fat ${roundedTotals.fat}g | Sugar ${roundedTotals.sugar}g\nAverage/day: ${averagePerDay.calories} cal | Protein ${averagePerDay.protein}g${targetLine}${mealLines ? `\n\nRecent meals:\n${mealLines}` : ''}`;
 
   return response(Intent.SUMMARY, true, {
     period,
@@ -417,6 +530,96 @@ export async function handleSummary(request: AgentRequest): Promise<AgentRespons
     remainingCalories,
     meals,
   }, message);
+}
+
+export async function handleLogs(request: AgentRequest): Promise<AgentResponse<LogsData>> {
+  const userId = userKey(request);
+  const range = parseLogsRange(request.userInput);
+  const meals = await nutritionStore.getMealsByDateRange(userId, range.startDate, range.endDate);
+  const sortedMeals = meals.slice().sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
+  if (sortedMeals.length === 0) {
+    return response(Intent.LOGS, true, {
+      label: range.label,
+      startDate: range.startDate.toISOString(),
+      endDate: range.endDate.toISOString(),
+      meals: sortedMeals,
+    }, `Logs for ${range.label}\nNo meals logged.`);
+  }
+
+  const lines = sortedMeals.map((meal, index) => {
+    const nutrition = meal.nutrition;
+    return `${index + 1}. ${formatMealTime(meal.timestamp)} - ${nutrition.food}: ${nutrition.calories} cal, Protein ${nutrition.protein}g, Carbs ${nutrition.carbs}g, Fat ${nutrition.fat}g, Sugar ${nutrition.sugar}g`;
+  });
+  let message = `Logs for ${range.label}\nMeals: ${sortedMeals.length}\n\n${lines.join('\n')}`;
+
+  if (message.length > 3900) {
+    const visibleLines: string[] = [];
+    message = `Logs for ${range.label}\nMeals: ${sortedMeals.length}\n\n`;
+    for (const line of lines) {
+      if (`${message}${visibleLines.join('\n')}\n${line}`.length > 3750) break;
+      visibleLines.push(line);
+    }
+    message += `${visibleLines.join('\n')}\n\nShowing ${visibleLines.length} of ${sortedMeals.length} meals. Narrow the date range to see the rest.`;
+  }
+
+  return response(Intent.LOGS, true, {
+    label: range.label,
+    startDate: range.startDate.toISOString(),
+    endDate: range.endDate.toISOString(),
+    meals: sortedMeals,
+  }, message);
+}
+
+export async function handleEditLog(request: AgentRequest): Promise<AgentResponse<LogsData>> {
+  const userId = userKey(request);
+  const range = parseLogsRange(request.userInput.replace(/^\/edit_log(?:@\w+)?/i, '/logs'));
+  const meals = await nutritionStore.getMealsByDateRange(userId, range.startDate, range.endDate);
+  const sortedMeals = meals.slice().sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
+  if (sortedMeals.length === 0) {
+    return response(Intent.EDIT_LOG, true, {
+      label: range.label,
+      startDate: range.startDate.toISOString(),
+      endDate: range.endDate.toISOString(),
+      meals: sortedMeals,
+    }, `Edit logs for ${range.label}\nNo meals logged.`);
+  }
+
+  const visibleMeals = sortedMeals.slice(0, 20);
+  const lines = visibleMeals.map((meal, index) => {
+    const nutrition = meal.nutrition;
+    return `${index + 1}. ${formatMealTime(meal.timestamp)} - ${nutrition.food}: ${nutrition.calories} cal`;
+  });
+  const extraLine = sortedMeals.length > visibleMeals.length
+    ? `\n\nShowing ${visibleMeals.length} of ${sortedMeals.length} meals. Use a narrower duration to edit older items.`
+    : '';
+  const replyMarkup = {
+    inline_keyboard: visibleMeals.map((meal, index) => [
+      { text: `Delete ${index + 1}`, callback_data: `delete_log:${meal.id}` },
+    ]),
+  };
+
+  return response(Intent.EDIT_LOG, true, {
+    label: range.label,
+    startDate: range.startDate.toISOString(),
+    endDate: range.endDate.toISOString(),
+    meals: sortedMeals,
+  }, `Edit logs for ${range.label}\nTap a button to delete a meal.\n\n${lines.join('\n')}${extraLine}`, undefined, replyMarkup);
+}
+
+export async function handleDeleteLog(userId: string, mealId: string): Promise<AgentResponse<Meal | null>> {
+  const deletedMeal = await nutritionStore.deleteMeal(userId, mealId);
+  if (!deletedMeal) {
+    return response(Intent.EDIT_LOG, false, null, 'That meal was already deleted or could not be found.', 'Meal not found');
+  }
+
+  return response(
+    Intent.EDIT_LOG,
+    true,
+    deletedMeal,
+    `Deleted: ${deletedMeal.nutrition.food}\n${deletedMeal.nutrition.calories} cal | Protein ${deletedMeal.nutrition.protein}g | Carbs ${deletedMeal.nutrition.carbs}g | Fat ${deletedMeal.nutrition.fat}g | Sugar ${deletedMeal.nutrition.sugar}g`
+  );
 }
 
 export async function handleRecommend(request: AgentRequest): Promise<AgentResponse<RecommendationData | null>> {
@@ -437,7 +640,7 @@ export async function handleRecommend(request: AgentRequest): Promise<AgentRespo
 }
 
 export async function handleHelp(): Promise<AgentResponse<null>> {
-  return response(Intent.HELP, true, null, `Nutrisaur commands\n/goal - set or edit your calorie goal\n/log chicken rice - analyse and save a meal\n/analyse chicken rice - analyse without saving\n/summary by day|week|month - totals and averages\n/recommend hawker|home|restaurant - food ideas based on your goal\n\nYou can also type "I ate chicken rice" or send a food photo with /log or /analyse.`);
+  return response(Intent.HELP, true, null, `Nutrisaur commands\n/goal - set or edit your calorie goal\n/log chicken rice - analyse and save a meal\n/logs today|yesterday|last monday|2026-05-02|this week - show logged meals\n/edit_log today|yesterday|last monday|2026-05-02|this week - delete logged meals with buttons\n/analyse chicken rice - analyse without saving\n/summary by day|week|month - totals and averages\n/recommend hawker|home|restaurant - food ideas based on your goal\n\nYou can also type "I ate chicken rice" or send a food photo with /log or /analyse.`);
 }
 
 function response<T>(intent: Intent, success: boolean, data: T, message: string, error?: string, replyMarkup?: unknown): AgentResponse<T> {

@@ -1,4 +1,183 @@
 {
-  "users": {},
-  "nutritionCache": {}
+  "users": {
+    "123": {
+      "id": "123",
+      "chatId": 456,
+      "meals": [],
+      "createdAt": "2026-05-02T04:34:22.520Z",
+      "updatedAt": "2026-05-02T04:34:22.553Z",
+      "goal": {
+        "goal": "lose_weight",
+        "gender": "male",
+        "activityLevel": "moderately_active",
+        "age": 32,
+        "heightCm": 175,
+        "weightKg": 72,
+        "bmr": 1659,
+        "maintenanceCalories": 2571,
+        "dailyCalories": 2121,
+        "proteinTarget": 144,
+        "updatedAt": "2026-05-02T04:34:22.553Z"
+      }
+    },
+    "276047552": {
+      "id": "276047552",
+      "chatId": 276047552,
+      "meals": [
+        {
+          "id": "meal_1777697403021_dbol9k",
+          "userId": "276047552",
+          "chatId": 276047552,
+          "source": "text",
+          "rawInput": "peanut butter toast with 2 eggs and 1 cup of the c kosong",
+          "nutrition": {
+            "food": "peanut butter toast, 2 eggs, 1 cup teh c kosong",
+            "calories": 540,
+            "protein": 27,
+            "carbs": 42,
+            "fat": 32,
+            "sugar": 9,
+            "confidence": 1
+          },
+          "timestamp": "2026-05-02T04:50:03.021Z"
+        }
+      ],
+      "createdAt": "2026-05-02T04:34:36.033Z",
+      "updatedAt": "2026-05-02T05:07:00.915Z",
+      "goal": {
+        "goal": "lose_weight",
+        "gender": "female",
+        "activityLevel": "moderately_active",
+        "age": 35,
+        "heightCm": 163,
+        "weightKg": 55,
+        "bmr": 1233,
+        "maintenanceCalories": 1911,
+        "dailyCalories": 1461,
+        "proteinTarget": 110,
+        "updatedAt": "2026-05-02T04:49:08.970Z"
+      }
+    }
+  },
+  "nutritionCache": {
+    "text:chicken rice": {
+      "key": "text:chicken rice",
+      "source": "text",
+      "input": "chicken rice",
+      "nutrition": {
+        "food": "chicken rice",
+        "calories": 550,
+        "protein": 30,
+        "carbs": 70,
+        "fat": 28,
+        "sugar": 2,
+        "confidence": 0.9
+      },
+      "createdAt": "2026-05-02T04:35:15.685Z",
+      "updatedAt": "2026-05-02T04:38:41.198Z",
+      "hitCount": 5
+    },
+    "text:peanut butter toast with eggs and teh c kosong": {
+      "key": "text:peanut butter toast with eggs and teh c kosong",
+      "source": "text",
+      "input": "peanut butter toast with eggs and teh c kosong",
+      "nutrition": {
+        "food": "peanut butter toast with eggs and teh c kosong",
+        "calories": 535,
+        "protein": 28,
+        "carbs": 40,
+        "fat": 30,
+        "sugar": 8,
+        "confidence": 0.65
+      },
+      "createdAt": "2026-05-02T04:40:08.846Z",
+      "updatedAt": "2026-05-02T04:40:08.846Z",
+      "hitCount": 0
+    },
+    "text:baked salmon with salt and pepper": {
+      "key": "text:baked salmon with salt and pepper",
+      "source": "text",
+      "input": "baked salmon with salt and pepper",
+      "nutrition": {
+        "food": "baked salmon with salt and pepper",
+        "calories": 280,
+        "protein": 28,
+        "carbs": 0,
+        "fat": 20,
+        "sugar": 0,
+        "confidence": 1
+      },
+      "createdAt": "2026-05-02T04:41:14.115Z",
+      "updatedAt": "2026-05-02T04:41:14.115Z",
+      "hitCount": 0
+    },
+    "text:orange": {
+      "key": "text:orange",
+      "source": "text",
+      "input": "orange",
+      "nutrition": {
+        "food": "orange",
+        "calories": 62,
+        "protein": 1.2,
+        "carbs": 15.4,
+        "fat": 0.2,
+        "sugar": 12,
+        "confidence": 0.95
+      },
+      "createdAt": "2026-05-02T04:46:08.251Z",
+      "updatedAt": "2026-05-02T04:46:08.251Z",
+      "hitCount": 0
+    },
+    "text:peanut butter toast with 2 eggs and 1 cup of the c kosong": {
+      "key": "text:peanut butter toast with 2 eggs and 1 cup of the c kosong",
+      "source": "text",
+      "input": "peanut butter toast with 2 eggs and 1 cup of the c kosong",
+      "nutrition": {
+        "food": "peanut butter toast, 2 eggs, 1 cup teh c kosong",
+        "calories": 540,
+        "protein": 27,
+        "carbs": 42,
+        "fat": 32,
+        "sugar": 9,
+        "confidence": 1
+      },
+      "createdAt": "2026-05-02T04:50:03.018Z",
+      "updatedAt": "2026-05-02T04:50:03.018Z",
+      "hitCount": 0
+    },
+    "text:potato chips": {
+      "key": "text:potato chips",
+      "source": "text",
+      "input": "potato chips",
+      "nutrition": {
+        "food": "Potato chips",
+        "calories": 160,
+        "protein": 2,
+        "carbs": 16,
+        "fat": 10,
+        "sugar": 0,
+        "confidence": 0.9
+      },
+      "createdAt": "2026-05-02T05:06:36.506Z",
+      "updatedAt": "2026-05-02T05:06:36.506Z",
+      "hitCount": 0
+    },
+    "text:1 bowl of vegetable soup made from potatoes pumpkins carrot onion baby corn": {
+      "key": "text:1 bowl of vegetable soup made from potatoes pumpkins carrot onion baby corn",
+      "source": "text",
+      "input": "1 bowl of vegetable soup made from potatoes pumpkins carrot onion baby corn",
+      "nutrition": {
+        "food": "1 bowl of vegetable soup made from potatoes, pumpkins, carrot, onion, baby corn",
+        "calories": 80,
+        "protein": 3,
+        "carbs": 18,
+        "fat": 0.5,
+        "sugar": 5,
+        "confidence": 1
+      },
+      "createdAt": "2026-05-02T05:08:09.759Z",
+      "updatedAt": "2026-05-02T05:08:09.759Z",
+      "hitCount": 0
+    }
+  }
 }
