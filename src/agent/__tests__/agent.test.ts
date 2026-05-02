@@ -15,7 +15,9 @@ async function runAllTests(): Promise<void> {
   assert(classifyIntent('/analyse chicken rice') === Intent.ANALYZE, 'Expected /analyse to classify as ANALYZE');
   assert(classifyIntent('/summary by week') === Intent.SUMMARY, 'Expected /summary to classify as SUMMARY');
   assert(classifyIntent('/calories_remaining') === Intent.CALORIES_REMAINING, 'Expected /calories_remaining to classify as CALORIES_REMAINING');
+  assert(classifyIntent('/calories_remaining@nutrisaur_bot') === Intent.CALORIES_REMAINING, 'Expected bot-qualified /calories_remaining to classify as CALORIES_REMAINING');
   assert(classifyIntent('/recommend hawker') === Intent.RECOMMEND, 'Expected /recommend to classify as RECOMMEND');
+  assert(classifyIntent('/calories') === Intent.HELP, 'Expected unknown slash commands to show HELP');
   assert(classifyIntent('I have eaten chicken rice') === Intent.LOG, 'Expected natural meal text to classify as LOG');
 
   const base = { userId: 900001, chatId: 900001 };

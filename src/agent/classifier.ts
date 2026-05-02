@@ -1,19 +1,25 @@
 import { Intent } from './types';
 
+function isCommand(input: string, command: string): boolean {
+  return new RegExp(`^/${command}(?:@\\w+)?(?:\\s|$)`, 'i').test(input);
+}
+
 export function classifyIntent(userInput: string, hasPhoto = false): Intent {
   const input = (userInput || '').trim().toLowerCase();
 
-  if (input.startsWith('/goal_remind')) return Intent.GOAL_REMIND;
-  if (input.startsWith('/goal')) return Intent.GOAL;
-  if (input.startsWith('/edit_log')) return Intent.EDIT_LOG;
-  if (input.startsWith('/logs')) return Intent.LOGS;
-  if (input.startsWith('/log')) return Intent.LOG;
-  if (input.startsWith('/analyse') || input.startsWith('/analyze')) return Intent.ANALYZE;
-  if (input.startsWith('/summary')) return Intent.SUMMARY;
-  if (input.startsWith('/calories_remaining')) return Intent.CALORIES_REMAINING;
-  if (input.startsWith('/recommend')) return Intent.RECOMMEND;
-  if (input.startsWith('/start')) return Intent.START;
-  if (input.startsWith('/help')) return Intent.HELP;
+  if (isCommand(input, 'goal_remind')) return Intent.GOAL_REMIND;
+  if (isCommand(input, 'goal')) return Intent.GOAL;
+  if (isCommand(input, 'edit_log')) return Intent.EDIT_LOG;
+  if (isCommand(input, 'logs')) return Intent.LOGS;
+  if (isCommand(input, 'log')) return Intent.LOG;
+  if (isCommand(input, 'analyse') || isCommand(input, 'analyze')) return Intent.ANALYZE;
+  if (isCommand(input, 'summary')) return Intent.SUMMARY;
+  if (isCommand(input, 'calories_remaining')) return Intent.CALORIES_REMAINING;
+  if (isCommand(input, 'recommend')) return Intent.RECOMMEND;
+  if (isCommand(input, 'start')) return Intent.START;
+  if (isCommand(input, 'help')) return Intent.HELP;
+
+  if (input.startsWith('/')) return Intent.HELP;
 
   if (hasPhoto) return Intent.ANALYZE;
   if (/\b(i ate|i have eaten|today i ate|just ate|had|consumed)\b/i.test(input)) return Intent.LOG;
