@@ -409,13 +409,14 @@ function parseLogsRange(userInput: string): { label: string; startDate: Date; en
 }
 
 function formatMealTime(timestamp: string): string {
-  return new Date(timestamp).toLocaleString('en-SG', {
+  return new Intl.DateTimeFormat('en-SG', {
     timeZone: config.appTimezone,
     month: 'short',
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
-  });
+    timeZoneName: 'short',
+  }).format(new Date(timestamp));
 }
 
 function parseGoalChoice(input: string): GoalType | null {
@@ -665,18 +666,18 @@ export async function handleLogs(request: AgentRequest): Promise<AgentResponse<L
       startDate: range.startDate.toISOString(),
       endDate: range.endDate.toISOString(),
       meals: sortedMeals,
-    }, `Logs for ${range.label}\nNo meals logged.`);
+    }, `Logs for ${range.label}\nTimezone: ${config.appTimezone}\nNo meals logged.`);
   }
 
   const lines = sortedMeals.map((meal, index) => {
     const nutrition = meal.nutrition;
     return `${index + 1}. ${formatMealTime(meal.timestamp)} - ${nutrition.food}: ${nutrition.calories} cal, Protein ${nutrition.protein}g, Carbs ${nutrition.carbs}g, Fat ${nutrition.fat}g, Sugar ${nutrition.sugar}g`;
   });
-  let message = `Logs for ${range.label}\nMeals: ${sortedMeals.length}\n\n${lines.join('\n')}`;
+  let message = `Logs for ${range.label}\nTimezone: ${config.appTimezone}\nMeals: ${sortedMeals.length}\n\n${lines.join('\n')}`;
 
   if (message.length > 3900) {
     const visibleLines: string[] = [];
-    message = `Logs for ${range.label}\nMeals: ${sortedMeals.length}\n\n`;
+    message = `Logs for ${range.label}\nTimezone: ${config.appTimezone}\nMeals: ${sortedMeals.length}\n\n`;
     for (const line of lines) {
       if (`${message}${visibleLines.join('\n')}\n${line}`.length > 3750) break;
       visibleLines.push(line);
@@ -704,7 +705,7 @@ export async function handleEditLog(request: AgentRequest): Promise<AgentRespons
       startDate: range.startDate.toISOString(),
       endDate: range.endDate.toISOString(),
       meals: sortedMeals,
-    }, `Edit logs for ${range.label}\nNo meals logged.`);
+    }, `Edit logs for ${range.label}\nTimezone: ${config.appTimezone}\nNo meals logged.`);
   }
 
   const visibleMeals = sortedMeals.slice(0, 20);
@@ -726,7 +727,7 @@ export async function handleEditLog(request: AgentRequest): Promise<AgentRespons
     startDate: range.startDate.toISOString(),
     endDate: range.endDate.toISOString(),
     meals: sortedMeals,
-  }, `Edit logs for ${range.label}\nTap a button to delete a meal.\n\n${lines.join('\n')}${extraLine}`, undefined, replyMarkup);
+  }, `Edit logs for ${range.label}\nTimezone: ${config.appTimezone}\nTap a button to delete a meal.\n\n${lines.join('\n')}${extraLine}`, undefined, replyMarkup);
 }
 
 export async function handleDeleteLog(userId: string, mealId: string): Promise<AgentResponse<Meal | null>> {

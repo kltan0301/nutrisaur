@@ -347,13 +347,14 @@ function parseLogsRange(userInput) {
     return { label: 'today', startDate: startOfDay(now), endDate: endOfDay(now) };
 }
 function formatMealTime(timestamp) {
-    return new Date(timestamp).toLocaleString('en-SG', {
+    return new Intl.DateTimeFormat('en-SG', {
         timeZone: config_1.config.appTimezone,
         month: 'short',
         day: 'numeric',
         hour: '2-digit',
         minute: '2-digit',
-    });
+        timeZoneName: 'short',
+    }).format(new Date(timestamp));
 }
 function parseGoalChoice(input) {
     const lower = input.toLowerCase();
@@ -602,16 +603,16 @@ async function handleLogs(request) {
             startDate: range.startDate.toISOString(),
             endDate: range.endDate.toISOString(),
             meals: sortedMeals,
-        }, `Logs for ${range.label}\nNo meals logged.`);
+        }, `Logs for ${range.label}\nTimezone: ${config_1.config.appTimezone}\nNo meals logged.`);
     }
     const lines = sortedMeals.map((meal, index) => {
         const nutrition = meal.nutrition;
         return `${index + 1}. ${formatMealTime(meal.timestamp)} - ${nutrition.food}: ${nutrition.calories} cal, Protein ${nutrition.protein}g, Carbs ${nutrition.carbs}g, Fat ${nutrition.fat}g, Sugar ${nutrition.sugar}g`;
     });
-    let message = `Logs for ${range.label}\nMeals: ${sortedMeals.length}\n\n${lines.join('\n')}`;
+    let message = `Logs for ${range.label}\nTimezone: ${config_1.config.appTimezone}\nMeals: ${sortedMeals.length}\n\n${lines.join('\n')}`;
     if (message.length > 3900) {
         const visibleLines = [];
-        message = `Logs for ${range.label}\nMeals: ${sortedMeals.length}\n\n`;
+        message = `Logs for ${range.label}\nTimezone: ${config_1.config.appTimezone}\nMeals: ${sortedMeals.length}\n\n`;
         for (const line of lines) {
             if (`${message}${visibleLines.join('\n')}\n${line}`.length > 3750)
                 break;
@@ -637,7 +638,7 @@ async function handleEditLog(request) {
             startDate: range.startDate.toISOString(),
             endDate: range.endDate.toISOString(),
             meals: sortedMeals,
-        }, `Edit logs for ${range.label}\nNo meals logged.`);
+        }, `Edit logs for ${range.label}\nTimezone: ${config_1.config.appTimezone}\nNo meals logged.`);
     }
     const visibleMeals = sortedMeals.slice(0, 20);
     const lines = visibleMeals.map((meal, index) => {
@@ -657,7 +658,7 @@ async function handleEditLog(request) {
         startDate: range.startDate.toISOString(),
         endDate: range.endDate.toISOString(),
         meals: sortedMeals,
-    }, `Edit logs for ${range.label}\nTap a button to delete a meal.\n\n${lines.join('\n')}${extraLine}`, undefined, replyMarkup);
+    }, `Edit logs for ${range.label}\nTimezone: ${config_1.config.appTimezone}\nTap a button to delete a meal.\n\n${lines.join('\n')}${extraLine}`, undefined, replyMarkup);
 }
 async function handleDeleteLog(userId, mealId) {
     const deletedMeal = await db_1.nutritionStore.deleteMeal(userId, mealId);
