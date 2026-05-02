@@ -1,0 +1,13 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.Intent = void 0;
+var Intent;
+(function (Intent) {
+    Intent["GOAL"] = "GOAL";
+    Intent["LOG"] = "LOG";
+    Intent["ANALYZE"] = "ANALYZE";
+    Intent["SUMMARY"] = "SUMMARY";
+    Intent["RECOMMEND"] = "RECOMMEND";
+    Intent["HELP"] = "HELP";
+})(Intent || (exports.Intent = Intent = {}));
+//# sourceMappingURL=types.js.map
