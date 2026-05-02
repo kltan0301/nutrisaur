@@ -516,6 +516,15 @@ function formatGoal(goal: UserGoal): string {
   return `Goal saved: ${goalLabels[goal.goal]}\nDaily target: ${goal.dailyCalories} cal\nProtein target: ${goal.proteinTarget}g\nMaintenance estimate: ${goal.maintenanceCalories} cal\nProfile: ${goal.gender}, ${goal.age}y, ${goal.heightCm}cm, ${goal.weightKg}kg, ${activityLabels[goal.activityLevel]}\n\nYou can run /goal again anytime to edit it.`;
 }
 
+export async function handleGoalRemind(request: AgentRequest): Promise<AgentResponse<UserGoal | null>> {
+  const user = await nutritionStore.getUser(userKey(request), request.chatId);
+  if (!user.goal) {
+    return response(Intent.GOAL_REMIND, false, null, '🦖 I don’t have your goal yet. Run /goal and I’ll help you set one up.');
+  }
+
+  return response(Intent.GOAL_REMIND, true, user.goal, `Current goal\n${formatGoal(user.goal)}`);
+}
+
 export async function handleGoal(request: AgentRequest): Promise<AgentResponse<UserGoal | null>> {
   const userId = userKey(request);
   const input = cleanCommand(request.userInput, 'goal');
@@ -654,6 +663,39 @@ export async function handleSummary(request: AgentRequest): Promise<AgentRespons
   }, message);
 }
 
+export async function handleCaloriesRemaining(request: AgentRequest): Promise<AgentResponse<SummaryData | null>> {
+  const userId = userKey(request);
+  const user = await nutritionStore.getUser(userId, request.chatId);
+  if (!user.goal) {
+    return response(
+      Intent.CALORIES_REMAINING,
+      false,
+      null,
+      '🦖 I need your calorie goal before I can count what’s left. Run /goal and I’ll help you set it up.'
+    );
+  }
+
+  const { startDate, endDate } = getDateRange('day');
+  const meals = await nutritionStore.getMealsByDateRange(userId, startDate, endDate);
+  const totals = emptyTotals();
+  meals.forEach((meal) => addTotals(totals, meal.nutrition));
+  const roundedTotals = roundTotals(totals);
+  const remainingCalories = user.goal.dailyCalories - roundedTotals.calories;
+  const statusLine = remainingCalories >= 0
+    ? `You can consume about ${remainingCalories} more calories today.`
+    : `You are about ${Math.abs(remainingCalories)} calories over your goal today.`;
+
+  return response(Intent.CALORIES_REMAINING, true, {
+    period: 'day',
+    startDate: startDate.toISOString(),
+    endDate: endDate.toISOString(),
+    totals: roundedTotals,
+    averagePerDay: roundedTotals,
+    remainingCalories,
+    meals,
+  }, `Calories remaining today\nTimezone: ${config.appTimezone}\nDaily goal: ${user.goal.dailyCalories} cal\nConsumed: ${roundedTotals.calories} cal\n${statusLine}\nMeals logged today: ${meals.length}`);
+}
+
 export async function handleLogs(request: AgentRequest): Promise<AgentResponse<LogsData>> {
   const userId = userKey(request);
   const range = parseLogsRange(request.userInput);
@@ -776,6 +818,8 @@ export async function handleHelp(): Promise<AgentResponse<null>> {
   return response(Intent.HELP, true, null, `Available commands
 /start - Meet Nutrisaur
 /goal - Set or edit your calorie goal
+/goal_remind - View your current saved goal
+/calories_remaining - Show calories left today
 /log chicken rice - Analyse and save a meal
 /logs today - Show logged meals
 /edit_log today - Delete logged meals with buttons

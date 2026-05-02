@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.handleSummary = exports.handleStart = exports.handleRecommend = exports.handleLogs = exports.handleLog = exports.handleHelp = exports.handleGoal = exports.handleEditLog = exports.handleDeleteLog = exports.handleAnalyze = exports.Intent = exports.nutritionStore = exports.classifyIntent = void 0;
+exports.handleSummary = exports.handleStart = exports.handleRecommend = exports.handleLogs = exports.handleLog = exports.handleHelp = exports.handleGoalRemind = exports.handleGoal = exports.handleEditLog = exports.handleDeleteLog = exports.handleCaloriesRemaining = exports.handleAnalyze = exports.Intent = exports.nutritionStore = exports.classifyIntent = void 0;
 exports.runAgent = runAgent;
 const telegram_1 = require("../services/telegram");
 const classifier_1 = require("./classifier");
@@ -25,6 +25,8 @@ async function runAgent(request) {
         const intent = user.goalDraft && !userInput.startsWith('/') ? types_1.Intent.GOAL : (0, classifier_1.classifyIntent)(userInput, hasPhoto);
         const image = request.photo?.fileId ? await (0, telegram_1.downloadTelegramFile)(request.photo.fileId) : undefined;
         switch (intent) {
+            case types_1.Intent.GOAL_REMIND:
+                return (0, handlers_1.handleGoalRemind)(request);
             case types_1.Intent.GOAL:
                 return (0, handlers_1.handleGoal)(request);
             case types_1.Intent.LOG:
@@ -37,6 +39,8 @@ async function runAgent(request) {
                 return (0, handlers_1.handleAnalyze)(request, image);
             case types_1.Intent.SUMMARY:
                 return (0, handlers_1.handleSummary)(request);
+            case types_1.Intent.CALORIES_REMAINING:
+                return (0, handlers_1.handleCaloriesRemaining)(request);
             case types_1.Intent.RECOMMEND:
                 return (0, handlers_1.handleRecommend)(request);
             case types_1.Intent.START:
@@ -67,9 +71,11 @@ var types_2 = require("./types");
 Object.defineProperty(exports, "Intent", { enumerable: true, get: function () { return types_2.Intent; } });
 var handlers_2 = require("./handlers");
 Object.defineProperty(exports, "handleAnalyze", { enumerable: true, get: function () { return handlers_2.handleAnalyze; } });
+Object.defineProperty(exports, "handleCaloriesRemaining", { enumerable: true, get: function () { return handlers_2.handleCaloriesRemaining; } });
 Object.defineProperty(exports, "handleDeleteLog", { enumerable: true, get: function () { return handlers_2.handleDeleteLog; } });
 Object.defineProperty(exports, "handleEditLog", { enumerable: true, get: function () { return handlers_2.handleEditLog; } });
 Object.defineProperty(exports, "handleGoal", { enumerable: true, get: function () { return handlers_2.handleGoal; } });
+Object.defineProperty(exports, "handleGoalRemind", { enumerable: true, get: function () { return handlers_2.handleGoalRemind; } });
 Object.defineProperty(exports, "handleHelp", { enumerable: true, get: function () { return handlers_2.handleHelp; } });
 Object.defineProperty(exports, "handleLog", { enumerable: true, get: function () { return handlers_2.handleLog; } });
 Object.defineProperty(exports, "handleLogs", { enumerable: true, get: function () { return handlers_2.handleLogs; } });

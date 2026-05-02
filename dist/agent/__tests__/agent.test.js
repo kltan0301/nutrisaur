@@ -7,6 +7,7 @@ function assert(condition, message) {
 }
 async function runAllTests() {
     assert((0, index_1.classifyIntent)('/goal') === index_1.Intent.GOAL, 'Expected /goal to classify as GOAL');
+    assert((0, index_1.classifyIntent)('/goal_remind') === index_1.Intent.GOAL_REMIND, 'Expected /goal_remind to classify as GOAL_REMIND');
     assert((0, index_1.classifyIntent)('/start') === index_1.Intent.START, 'Expected /start to classify as START');
     assert((0, index_1.classifyIntent)('/help') === index_1.Intent.HELP, 'Expected /help to classify as HELP');
     assert((0, index_1.classifyIntent)('/edit_log today') === index_1.Intent.EDIT_LOG, 'Expected /edit_log to classify as EDIT_LOG');
@@ -14,6 +15,7 @@ async function runAllTests() {
     assert((0, index_1.classifyIntent)('/log chicken rice') === index_1.Intent.LOG, 'Expected /log to classify as LOG');
     assert((0, index_1.classifyIntent)('/analyse chicken rice') === index_1.Intent.ANALYZE, 'Expected /analyse to classify as ANALYZE');
     assert((0, index_1.classifyIntent)('/summary by week') === index_1.Intent.SUMMARY, 'Expected /summary to classify as SUMMARY');
+    assert((0, index_1.classifyIntent)('/calories_remaining') === index_1.Intent.CALORIES_REMAINING, 'Expected /calories_remaining to classify as CALORIES_REMAINING');
     assert((0, index_1.classifyIntent)('/recommend hawker') === index_1.Intent.RECOMMEND, 'Expected /recommend to classify as RECOMMEND');
     assert((0, index_1.classifyIntent)('I have eaten chicken rice') === index_1.Intent.LOG, 'Expected natural meal text to classify as LOG');
     const base = { userId: 900001, chatId: 900001 };

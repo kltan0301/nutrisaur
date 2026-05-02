@@ -3,10 +3,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.handleGoalRemind = handleGoalRemind;
 exports.handleGoal = handleGoal;
 exports.handleLog = handleLog;
 exports.handleAnalyze = handleAnalyze;
 exports.handleSummary = handleSummary;
+exports.handleCaloriesRemaining = handleCaloriesRemaining;
 exports.handleLogs = handleLogs;
 exports.handleEditLog = handleEditLog;
 exports.handleDeleteLog = handleDeleteLog;
@@ -458,6 +460,13 @@ function goalReplyMarkup(step) {
 function formatGoal(goal) {
     return `Goal saved: ${goalLabels[goal.goal]}\nDaily target: ${goal.dailyCalories} cal\nProtein target: ${goal.proteinTarget}g\nMaintenance estimate: ${goal.maintenanceCalories} cal\nProfile: ${goal.gender}, ${goal.age}y, ${goal.heightCm}cm, ${goal.weightKg}kg, ${activityLabels[goal.activityLevel]}\n\nYou can run /goal again anytime to edit it.`;
 }
+async function handleGoalRemind(request) {
+    const user = await db_1.nutritionStore.getUser(userKey(request), request.chatId);
+    if (!user.goal) {
+        return response(types_1.Intent.GOAL_REMIND, false, null, '🦖 I don’t have your goal yet. Run /goal and I’ll help you set one up.');
+    }
+    return response(types_1.Intent.GOAL_REMIND, true, user.goal, `Current goal\n${formatGoal(user.goal)}`);
+}
 async function handleGoal(request) {
     const userId = userKey(request);
     const input = cleanCommand(request.userInput, 'goal');
@@ -592,6 +601,31 @@ async function handleSummary(request) {
         meals,
     }, message);
 }
+async function handleCaloriesRemaining(request) {
+    const userId = userKey(request);
+    const user = await db_1.nutritionStore.getUser(userId, request.chatId);
+    if (!user.goal) {
+        return response(types_1.Intent.CALORIES_REMAINING, false, null, '🦖 I need your calorie goal before I can count what’s left. Run /goal and I’ll help you set it up.');
+    }
+    const { startDate, endDate } = getDateRange('day');
+    const meals = await db_1.nutritionStore.getMealsByDateRange(userId, startDate, endDate);
+    const totals = emptyTotals();
+    meals.forEach((meal) => addTotals(totals, meal.nutrition));
+    const roundedTotals = roundTotals(totals);
+    const remainingCalories = user.goal.dailyCalories - roundedTotals.calories;
+    const statusLine = remainingCalories >= 0
+        ? `You can consume about ${remainingCalories} more calories today.`
+        : `You are about ${Math.abs(remainingCalories)} calories over your goal today.`;
+    return response(types_1.Intent.CALORIES_REMAINING, true, {
+        period: 'day',
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+        totals: roundedTotals,
+        averagePerDay: roundedTotals,
+        remainingCalories,
+        meals,
+    }, `Calories remaining today\nTimezone: ${config_1.config.appTimezone}\nDaily goal: ${user.goal.dailyCalories} cal\nConsumed: ${roundedTotals.calories} cal\n${statusLine}\nMeals logged today: ${meals.length}`);
+}
 async function handleLogs(request) {
     const userId = userKey(request);
     const range = parseLogsRange(request.userInput);
@@ -698,6 +732,8 @@ async function handleHelp() {
     return response(types_1.Intent.HELP, true, null, `Available commands
 /start - Meet Nutrisaur
 /goal - Set or edit your calorie goal
+/goal_remind - View your current saved goal
+/calories_remaining - Show calories left today
 /log chicken rice - Analyse and save a meal
 /logs today - Show logged meals
 /edit_log today - Delete logged meals with buttons

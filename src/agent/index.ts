@@ -3,8 +3,10 @@ import { classifyIntent } from './classifier';
 import {
   getUserRecord,
   handleAnalyze,
+  handleCaloriesRemaining,
   handleEditLog,
   handleGoal,
+  handleGoalRemind,
   handleHelp,
   handleLog,
   handleLogs,
@@ -37,6 +39,8 @@ export async function runAgent(request: AgentRequest): Promise<AgentResponse> {
     const image = request.photo?.fileId ? await downloadTelegramFile(request.photo.fileId) : undefined;
 
     switch (intent) {
+      case Intent.GOAL_REMIND:
+        return handleGoalRemind(request);
       case Intent.GOAL:
         return handleGoal(request);
       case Intent.LOG:
@@ -49,6 +53,8 @@ export async function runAgent(request: AgentRequest): Promise<AgentResponse> {
         return handleAnalyze(request, image);
       case Intent.SUMMARY:
         return handleSummary(request);
+      case Intent.CALORIES_REMAINING:
+        return handleCaloriesRemaining(request);
       case Intent.RECOMMEND:
         return handleRecommend(request);
       case Intent.START:
@@ -74,7 +80,7 @@ export async function runAgent(request: AgentRequest): Promise<AgentResponse> {
 export { classifyIntent } from './classifier';
 export { nutritionStore } from './db';
 export { Intent } from './types';
-export { handleAnalyze, handleDeleteLog, handleEditLog, handleGoal, handleHelp, handleLog, handleLogs, handleRecommend, handleStart, handleSummary } from './handlers';
+export { handleAnalyze, handleCaloriesRemaining, handleDeleteLog, handleEditLog, handleGoal, handleGoalRemind, handleHelp, handleLog, handleLogs, handleRecommend, handleStart, handleSummary } from './handlers';
 export type {
   ActivityLevel,
   AgentRequest,

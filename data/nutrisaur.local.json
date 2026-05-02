@@ -40,7 +40,20 @@
         }
       ],
       "createdAt": "2026-05-02T06:10:12.652Z",
-      "updatedAt": "2026-05-02T07:08:01.929Z"
+      "updatedAt": "2026-05-02T07:17:00.082Z",
+      "goal": {
+        "goal": "lose_weight",
+        "gender": "female",
+        "activityLevel": "moderately_active",
+        "age": 35,
+        "heightCm": 162,
+        "weightKg": 55,
+        "bmr": 1227,
+        "maintenanceCalories": 1901,
+        "dailyCalories": 1451,
+        "proteinTarget": 110,
+        "updatedAt": "2026-05-02T07:17:00.082Z"
+      }
     }
   },
   "nutritionCache": {

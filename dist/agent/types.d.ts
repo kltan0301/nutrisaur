@@ -1,4 +1,5 @@
 export declare enum Intent {
+    GOAL_REMIND = "GOAL_REMIND",
     GOAL = "GOAL",
     LOG = "LOG",
     LOGS = "LOGS",
@@ -6,6 +7,7 @@ export declare enum Intent {
     ANALYZE = "ANALYZE",
     SUMMARY = "SUMMARY",
     RECOMMEND = "RECOMMEND",
+    CALORIES_REMAINING = "CALORIES_REMAINING",
     START = "START",
     HELP = "HELP"
 }

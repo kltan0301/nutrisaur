@@ -97,6 +97,8 @@ POST /webhook_<WEBHOOK_SECRET>
 ## Commands
 
 - `/goal` - guided goal setup and editing
+- `/goal_remind` - view the current saved goal
+- `/calories_remaining` - show calories left today based on goal and logs
 - `/start` - welcome message
 - `/help` - commands, examples, and limitations
 - `/log <meal>` - analyse and save a meal

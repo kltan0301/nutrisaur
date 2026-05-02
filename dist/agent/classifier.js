@@ -4,6 +4,8 @@ exports.classifyIntent = classifyIntent;
 const types_1 = require("./types");
 function classifyIntent(userInput, hasPhoto = false) {
     const input = (userInput || '').trim().toLowerCase();
+    if (input.startsWith('/goal_remind'))
+        return types_1.Intent.GOAL_REMIND;
     if (input.startsWith('/goal'))
         return types_1.Intent.GOAL;
     if (input.startsWith('/edit_log'))
@@ -16,6 +18,8 @@ function classifyIntent(userInput, hasPhoto = false) {
         return types_1.Intent.ANALYZE;
     if (input.startsWith('/summary'))
         return types_1.Intent.SUMMARY;
+    if (input.startsWith('/calories_remaining'))
+        return types_1.Intent.CALORIES_REMAINING;
     if (input.startsWith('/recommend'))
         return types_1.Intent.RECOMMEND;
     if (input.startsWith('/start'))
